@@ -92,10 +92,15 @@ def migrate_claims(session, dat_csv_path: str, batch_size: int = 10000):
                 claims_batch = []
 
                 for _, row in chunk.iterrows():
+                    # Handle both old and new column name formats
+                    claim_date_col = 'CLAIMCLOSEDATE' if 'CLAIMCLOSEDATE' in row else 'claim_date'
+                    predicted_col = 'CAUSATION_HIGH_RECOMMENDATION' if 'CAUSATION_HIGH_RECOMMENDATION' in row else 'predicted_pain_suffering'
+                    adjuster_col = 'ADJUSTERNAME' if 'ADJUSTERNAME' in row else 'adjuster'
+
                     claim = Claim(
                         claim_id=str(row.get('claim_id', '')),
                         VERSIONID=int(row.get('VERSIONID', 0)) if pd.notna(row.get('VERSIONID')) else None,
-                        claim_date=str(row.get('claim_date', '')),
+                        claim_date=str(row.get(claim_date_col, '')),
                         DURATIONTOREPORT=float(row.get('DURATIONTOREPORT', 0)) if pd.notna(row.get('DURATIONTOREPORT')) else None,
                         DOLLARAMOUNTHIGH=float(row.get('DOLLARAMOUNTHIGH', 0)) if pd.notna(row.get('DOLLARAMOUNTHIGH')) else None,
 
@@ -129,9 +134,9 @@ def migrate_claims(session, dat_csv_path: str, batch_size: int = 10000):
                         SEVERITY_SCORE=float(row.get('SEVERITY_SCORE', 0)) if pd.notna(row.get('SEVERITY_SCORE')) else None,
                         CAUTION_LEVEL=str(row.get('CAUTION_LEVEL', '')),
 
-                        # Adjuster
-                        adjuster=str(row.get('adjuster', '')),
-                        predicted_pain_suffering=float(row.get('predicted_pain_suffering', 0)) if pd.notna(row.get('predicted_pain_suffering')) else None,
+                        # Adjuster (handle both column name formats)
+                        adjuster=str(row.get(adjuster_col, '')),
+                        predicted_pain_suffering=float(row.get(predicted_col, 0)) if pd.notna(row.get(predicted_col)) else None,
                         variance_pct=float(row.get('variance_pct', 0)) if pd.notna(row.get('variance_pct')) else None,
 
                         # Causation factors

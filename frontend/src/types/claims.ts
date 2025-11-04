@@ -1,9 +1,31 @@
 export interface ClaimData {
-  claim_id: string;
-  VERSIONID: number;
-  claim_date: string;
-  DURATIONTOREPORT: number;
+  // Core identifiers - ACTUAL DATA FORMAT
+  CLAIMID: number;
+  EXPSR_NBR: string;
+
+  // Dates
+  CLAIMCLOSEDDATE: string;
+  INCIDENTDATE: string;
+
+  // Financial
+  CAUSATION_HIGH_RECOMMENDATION: number;
+  SETTLEMENTAMOUNT: number;
   DOLLARAMOUNTHIGH: number;
+  GENERALS: number;
+
+  // Version and duration
+  VERSIONID: number;
+  DURATIONTOREPORT: number;
+
+  // Person information
+  ADJUSTERNAME: string;
+  HASATTORNEY: string | number;
+  AGE: number;
+  GENDER: string | number;
+  OCCUPATION_AVAILABLE: number;
+  OCCUPATION?: string;
+
+  // Injury information
   ALL_BODYPARTS: string;
   ALL_INJURIES: string;
   ALL_INJURYGROUP_CODES: string;
@@ -14,35 +36,28 @@ export interface ClaimData {
   INJURY_COUNT: number;
   BODYPART_COUNT: number;
   INJURYGROUP_COUNT: number;
+  BODY_REGION: string;
+
+  // Settlement timing
   SETTLEMENT_DAYS: number;
   SETTLEMENT_MONTHS: number;
   SETTLEMENT_YEARS: number;
-  IMPACT: number;
+  SETTLEMENT_SPEED_CATEGORY: string;
+
+  // Location and venue
+  IOL: number;  // Impact on Life (was IMPACT)
   COUNTYNAME: string;
   VENUESTATE: string;
-  VENUE_RATING: string;
+  VENUERATINGTEXT: string;
+  VENUERATINGPOINT: number;
   RATINGWEIGHT: number;
-  INJURY_GROUP_CODE: string;
-  CAUSATION__HIGH_RECOMMENDATION: number;
-  SEVERITY_SCORE: number;
-  CAUTION_LEVEL: string;
-  adjuster: string;
-  predicted_pain_suffering: number;
-  variance_pct: number;
-  // Causation factors
-  causation_probability: number;
-  causation_tx_delay: number;
-  causation_tx_gaps: number;
-  causation_compliance: number;
-  // Severity factors
-  severity_allowed_tx_period: number;
-  severity_initial_tx: number;
-  severity_injections: number;
-  severity_objective_findings: number;
-  severity_pain_mgmt: number;
-  severity_type_tx: number;
-  severity_injury_site: number;
-  severity_code: number;
+  VENUERATING: string;
+  VULNERABLECLAIMANT?: string;
+
+  // Calculated fields
+  SEVERITY_SCORE?: number;
+  CAUTION_LEVEL?: string;
+  variance_pct?: number;
   // Extended clinical factors
   Advanced_Pain_Treatment?: string;
   Causation_Compliance?: string;

@@ -21,9 +21,10 @@ class Settings(BaseSettings):
 
     # Data paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
-    DATA_DIR: str = str(BASE_DIR.parent / "frontend" / "public")
-    CSV_FILE_PATH: str = str(BASE_DIR.parent / "frontend" / "public" / "dat.csv")
-    AGGREGATED_DATA_DIR: str = str(BASE_DIR.parent / "frontend" / "public")
+    # Use backend/data as the canonical source for CSV files
+    DATA_DIR: str = str(BASE_DIR / "data")
+    CSV_FILE_PATH: str = str(BASE_DIR / "data" / "dat.csv")
+    AGGREGATED_DATA_DIR: str = str(BASE_DIR / "data")
 
     class Config:
         env_file = ".env"

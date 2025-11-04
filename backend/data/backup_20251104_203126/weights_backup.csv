@@ -1,0 +1,42 @@
+factor_name,base_weight,min_weight,max_weight,category,description
+Advanced_Pain_Treatment,0.08,0.03,0.15,Treatment,Advanced pain treatment usage
+Causation_Compliance,0.08,0.03,0.15,Causation,Causation compliance indicator
+Clinical_Findings,0.08,0.03,0.15,Clinical,Objective clinical findings present
+Cognitive_Symptoms,0.08,0.03,0.15,Clinical,Cognitive symptoms present
+Complete_Disability_Duration,0.08,0.03,0.15,Disability,Duration of complete disability
+Concussion_Diagnosis,0.08,0.03,0.15,Clinical,Concussion diagnosis
+Consciousness_Impact,0.08,0.03,0.15,Clinical,Impact on consciousness
+Consistent_Mechanism,0.08,0.03,0.15,Causation,Consistency of injury mechanism
+Dental_Procedure,0.08,0.03,0.15,Treatment,Dental procedure performed
+Dental_Treatment,0.08,0.03,0.15,Treatment,Dental treatment performed
+Dental_Visibility,0.08,0.03,0.15,Clinical,Visibility of dental injuries
+Emergency_Treatment,0.08,0.03,0.15,Treatment,Emergency treatment provided
+Fixation_Method,0.08,0.03,0.15,Treatment,Surgical fixation method
+Head_Trauma,0.08,0.03,0.15,Clinical,Head trauma present
+Immobilization_Used,0.08,0.03,0.15,Treatment,Immobilization used
+Injury_Count,0.08,0.03,0.15,Clinical,Number of injuries
+Injury_Extent,0.08,0.03,0.15,Clinical,Extent of injuries
+Injury_Laterality,0.08,0.03,0.15,Clinical,Injury laterality
+Injury_Location,0.08,0.03,0.15,Clinical,Location of injuries
+Injury_Type,0.08,0.03,0.15,Clinical,Type of injury
+Mobility_Assistance,0.08,0.03,0.15,Disability,Need for mobility assistance
+Movement_Restriction,0.08,0.03,0.15,Disability,Movement restriction severity
+Nerve_Involvement,0.08,0.03,0.15,Clinical,Nerve involvement present
+Pain_Management,0.08,0.03,0.15,Treatment,Pain management applied
+Partial_Disability_Duration,0.08,0.03,0.15,Disability,Duration of partial disability
+Physical_Symptoms,0.08,0.03,0.15,Clinical,Physical symptoms present
+Physical_Therapy,0.08,0.03,0.15,Treatment,Physical therapy performed
+Prior_Treatment,0.08,0.03,0.15,Treatment,Prior treatment history
+Recovery_Duration,0.08,0.03,0.15,Disability,Total recovery duration
+Repair_Type,0.08,0.03,0.15,Treatment,Surgical repair type
+Respiratory_Issues,0.08,0.03,0.15,Clinical,Respiratory issues present
+Soft_Tissue_Damage,0.08,0.03,0.15,Clinical,Soft tissue damage present
+Special_Treatment,0.08,0.03,0.15,Treatment,Special treatment performed
+Surgical_Intervention,0.08,0.03,0.15,Treatment,Surgical intervention performed
+Symptom_Timeline,0.08,0.03,0.15,Clinical,Symptom timeline context
+Treatment_Compliance,0.08,0.03,0.15,Treatment,Overall treatment compliance
+Treatment_Course,0.08,0.03,0.15,Treatment,Treatment course details
+Treatment_Delays,0.08,0.03,0.15,Treatment,Treatment delays present
+Treatment_Level,0.08,0.03,0.15,Treatment,Treatment level intensity
+Treatment_Period_Considered,0.08,0.03,0.15,Treatment,Treatment period considered
+Vehicle_Impact,0.08,0.03,0.15,Clinical,Vehicle impact involvement

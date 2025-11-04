@@ -36,7 +36,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
 
         # Step 1: Get total recent claims count (database query)
         total_recent = session.query(func.count(Claim.id)).filter(
-            Claim.claim_date >= cutoff_date
+            Claim.CLAIMCLOSEDDATE >= cutoff_date
         ).scalar()
 
         logger.info(f"Analyzing {total_recent:,} recent claims (database-level aggregation)")
@@ -49,12 +49,12 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
 
         # Step 2: Get control variables (database-level mode calculation)
         control_injury_query = session.query(
-            Claim.INJURY_GROUP_CODE,
+            Claim.PRIMARY_INJURYGROUP_CODE,
             func.count(Claim.id).label('count')
         ).filter(
-            Claim.claim_date >= cutoff_date,
-            Claim.INJURY_GROUP_CODE.isnot(None)
-        ).group_by(Claim.INJURY_GROUP_CODE).order_by(func.count(Claim.id).desc()).first()
+            Claim.CLAIMCLOSEDDATE >= cutoff_date,
+            Claim.PRIMARY_INJURYGROUP_CODE.isnot(None)
+        ).group_by(Claim.PRIMARY_INJURYGROUP_CODE).order_by(func.count(Claim.id).desc()).first()
 
         control_injury = control_injury_query[0] if control_injury_query else None
 
@@ -62,19 +62,19 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             Claim.CAUTION_LEVEL,
             func.count(Claim.id).label('count')
         ).filter(
-            Claim.claim_date >= cutoff_date,
+            Claim.CLAIMCLOSEDDATE >= cutoff_date,
             Claim.CAUTION_LEVEL.isnot(None)
         ).group_by(Claim.CAUTION_LEVEL).order_by(func.count(Claim.id).desc()).first()
 
         control_severity = control_severity_query[0] if control_severity_query else None
 
         control_impact_query = session.query(
-            Claim.IMPACT,
+            Claim.IOL,
             func.count(Claim.id).label('count')
         ).filter(
-            Claim.claim_date >= cutoff_date,
-            Claim.IMPACT.isnot(None)
-        ).group_by(Claim.IMPACT).order_by(func.count(Claim.id).desc()).first()
+            Claim.CLAIMCLOSEDDATE >= cutoff_date,
+            Claim.IOL.isnot(None)
+        ).group_by(Claim.IOL).order_by(func.count(Claim.id).desc()).first()
 
         control_impact = control_impact_query[0] if control_impact_query else None
 
@@ -85,7 +85,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             Claim.COUNTYNAME,
             Claim.VENUESTATE
         ).filter(
-            Claim.claim_date >= cutoff_date,
+            Claim.CLAIMCLOSEDDATE >= cutoff_date,
             Claim.COUNTYNAME.isnot(None)
         ).distinct().all()
 
@@ -100,13 +100,13 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
 
             # Get current venue rating (mode - database-level)
             current_venue_query = session.query(
-                Claim.VENUE_RATING,
+                Claim.VENUERATING,
                 func.count(Claim.id).label('count')
             ).filter(
-                Claim.claim_date >= cutoff_date,
+                Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,
-                Claim.VENUE_RATING.isnot(None)
-            ).group_by(Claim.VENUE_RATING).order_by(func.count(Claim.id).desc()).first()
+                Claim.VENUERATING.isnot(None)
+            ).group_by(Claim.VENUERATING).order_by(func.count(Claim.id).desc()).first()
 
             if not current_venue_query or not current_venue_query[0]:
                 continue
@@ -118,12 +118,12 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                 func.avg(func.abs(Claim.variance_pct)).label('avg_variance'),
                 func.count(Claim.id).label('count')
             ).filter(
-                Claim.claim_date >= cutoff_date,
+                Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,
-                Claim.VENUE_RATING == current_venue,
-                Claim.INJURY_GROUP_CODE == control_injury,
+                Claim.VENUERATING == current_venue,
+                Claim.PRIMARY_INJURYGROUP_CODE == control_injury,
                 Claim.CAUTION_LEVEL == control_severity,
-                Claim.IMPACT == control_impact
+                Claim.IOL == control_impact
             ).first()
 
             # Relax controls if sample too small
@@ -134,10 +134,10 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                     func.avg(func.abs(Claim.variance_pct)),
                     func.count(Claim.id)
                 ).filter(
-                    Claim.claim_date >= cutoff_date,
+                    Claim.CLAIMCLOSEDDATE >= cutoff_date,
                     Claim.COUNTYNAME == county_name,
-                    Claim.VENUE_RATING == current_venue,
-                    Claim.INJURY_GROUP_CODE == control_injury
+                    Claim.VENUERATING == current_venue,
+                    Claim.PRIMARY_INJURYGROUP_CODE == control_injury
                 ).first()
                 controlled_for = ['injury_type']
 
@@ -146,9 +146,9 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                     func.avg(func.abs(Claim.variance_pct)),
                     func.count(Claim.id)
                 ).filter(
-                    Claim.claim_date >= cutoff_date,
+                    Claim.CLAIMCLOSEDDATE >= cutoff_date,
                     Claim.COUNTYNAME == county_name,
-                    Claim.VENUE_RATING == current_venue
+                    Claim.VENUERATING == current_venue
                 ).first()
                 controlled_for = []
 
@@ -171,11 +171,11 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                     func.avg(func.abs(Claim.variance_pct)),
                     func.count(Claim.id)
                 ).filter(
-                    Claim.claim_date >= cutoff_date,
-                    Claim.VENUE_RATING == alt_venue,
-                    Claim.INJURY_GROUP_CODE == control_injury,
+                    Claim.CLAIMCLOSEDDATE >= cutoff_date,
+                    Claim.VENUERATING == alt_venue,
+                    Claim.PRIMARY_INJURYGROUP_CODE == control_injury,
                     Claim.CAUTION_LEVEL == control_severity,
-                    Claim.IMPACT == control_impact
+                    Claim.IOL == control_impact
                 ).first()
 
                 if not isolated_alt or isolated_alt[1] < 5:
@@ -183,9 +183,9 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                         func.avg(func.abs(Claim.variance_pct)),
                         func.count(Claim.id)
                     ).filter(
-                        Claim.claim_date >= cutoff_date,
-                        Claim.VENUE_RATING == alt_venue,
-                        Claim.INJURY_GROUP_CODE == control_injury
+                        Claim.CLAIMCLOSEDDATE >= cutoff_date,
+                        Claim.VENUERATING == alt_venue,
+                        Claim.PRIMARY_INJURYGROUP_CODE == control_injury
                     ).first()
 
                 if isolated_alt and isolated_alt[1] >= 3:
@@ -218,15 +218,15 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
 
             # Calculate trend (database-level monthly aggregation)
             monthly_data = session.query(
-                func.strftime('%Y-%m', Claim.claim_date).label('month'),
+                func.strftime('%Y-%m', Claim.CLAIMCLOSEDDATE).label('month'),
                 func.avg(Claim.variance_pct).label('avg_var'),
                 func.count(Claim.id).label('count')
             ).filter(
-                Claim.claim_date >= cutoff_date,
+                Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,
-                Claim.VENUE_RATING == current_venue,
-                Claim.INJURY_GROUP_CODE == control_injury if len(controlled_for) > 0 else True
-            ).group_by(func.strftime('%Y-%m', Claim.claim_date)).all()
+                Claim.VENUERATING == current_venue,
+                Claim.PRIMARY_INJURYGROUP_CODE == control_injury if len(controlled_for) > 0 else True
+            ).group_by(func.strftime('%Y-%m', Claim.CLAIMCLOSEDDATE)).all()
 
             trend = 'stable'
             if len(monthly_data) >= 3:

@@ -6,9 +6,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Calendar, BarChart3, Activity } from "lucide-react";
-import { AggregatedData } from "@/hooks/useAggregatedClaimsData";
+import { AggregatedData } from "@/hooks/useAggregatedClaimsDataAPI";
 import { useMemo, useState } from "react";
-import { DashboardFilters, FilterState } from "@/components/dashboard/DashboardFilters";
 import {
   BarChart,
   Bar,
@@ -67,81 +66,15 @@ const COLORS = {
 };
 
 export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions }: OverviewTabAggregatedProps) {
-  const [filters, setFilters] = useState<FilterState>({
-    county: "all",
-    injuryGroup: "all",
-    severity: "all",
-    year: "all",
-    impactOnLife: "all",
-  });
+  // REMOVED: Internal filter state - now using page-level filters from IndexAggregated
+  // The data prop is already filtered by the parent component
 
   const [selectedVersion, setSelectedVersion] = useState<string>("all");
   const [compareVersions, setCompareVersions] = useState<boolean>(false);
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleResetFilters = () => {
-    setFilters({
-      county: "all",
-      injuryGroup: "all",
-      severity: "all",
-      year: "all",
-      impactOnLife: "all",
-    });
-  };
-
-  // Filter all data based on current filters
-  const filteredData = useMemo(() => {
-    const filterYearSeverity = data.yearSeverity.filter(item => {
-      const matchesYear = filters.year === "all" || item.year.toString() === filters.year;
-      const matchesSeverity = filters.severity === "all" || item.severity_category === filters.severity;
-      return matchesYear && matchesSeverity;
-    });
-
-    const filterCountyYear = data.countyYear.filter(item => {
-      const matchesCounty = filters.county === "all" || item.county === filters.county;
-      const matchesYear = filters.year === "all" || item.year.toString() === filters.year;
-      return matchesCounty && matchesYear;
-    });
-
-    const filterInjuryGroup = data.injuryGroup.filter(item => {
-      const matchesInjury = filters.injuryGroup === "all" || item.injury_group === filters.injuryGroup;
-      const matchesSeverity = filters.severity === "all" || item.severity_category === filters.severity;
-      return matchesInjury && matchesSeverity;
-    });
-
-    return {
-      yearSeverity: filterYearSeverity,
-      countyYear: filterCountyYear,
-      injuryGroup: filterInjuryGroup,
-      adjusterPerformance: data.adjusterPerformance,
-      venueAnalysis: data.venueAnalysis,
-      varianceDrivers: data.varianceDrivers,
-    };
-  }, [data, filters]);
-
-  // Recalculate KPIs based on filtered data
-  const kpis = useMemo(() => {
-    const totalClaims = filteredData.yearSeverity.reduce((sum, s) => sum + s.claim_count, 0);
-    if (totalClaims === 0) return initialKpis;
-
-    const totalActual = filteredData.yearSeverity.reduce((sum, s) => sum + s.total_actual_settlement, 0);
-    const totalDays = filteredData.yearSeverity.reduce((sum, s) => sum + (s.avg_settlement_days * s.claim_count), 0);
-    const totalHighVariance = filteredData.yearSeverity.reduce((sum, s) => sum + s.high_variance_count, 0);
-    const totalOver = filteredData.yearSeverity.reduce((sum, s) => sum + s.overprediction_count, 0);
-    const totalUnder = filteredData.yearSeverity.reduce((sum, s) => sum + s.underprediction_count, 0);
-
-    return {
-      totalClaims,
-      avgSettlement: Math.round(totalActual / totalClaims),
-      avgDays: Math.round(totalDays / totalClaims),
-      highVariancePct: (totalHighVariance / totalClaims) * 100,
-      overpredictionRate: (totalOver / totalClaims) * 100,
-      underpredictionRate: (totalUnder / totalClaims) * 100,
-    };
-  }, [filteredData, initialKpis]);
+  // Use the already-filtered data passed from parent
+  const filteredData = data;
+  const kpis = initialKpis;
 
   // Executive Summary with filtered data
   const executiveSummary = useMemo(() => {
@@ -365,13 +298,8 @@ export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions }
 
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <DashboardFilters
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onResetFilters={handleResetFilters}
-        filterOptions={filterOptions}
-      />
+      {/* Filters are now in the left sidebar (FilterSidebar component in IndexAggregated) */}
+      {/* Data is already filtered by parent component based on sidebar filters */}
 
       {/* Version Selector */}
       <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">

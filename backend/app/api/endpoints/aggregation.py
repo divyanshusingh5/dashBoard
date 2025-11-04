@@ -89,8 +89,8 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
         df = pd.DataFrame(claims)
         logger.info(f"Loaded {len(df)} claims for aggregation")
 
-        # Extract year from claim_date
-        df['year'] = pd.to_datetime(df['claim_date'], errors='coerce').dt.year
+        # Extract year from CLAIMCLOSEDDATE
+        df['year'] = pd.to_datetime(df['CLAIMCLOSEDDATE'], errors='coerce').dt.year
         df['year'] = df['year'].fillna(2024).astype(int)
 
         # Calculate one year ago
@@ -99,17 +99,16 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
 
         # 1. Year-Severity Summary
         year_severity = df.groupby(['year', 'CAUTION_LEVEL']).agg({
-            'claim_id': 'count',
+            'CLAIMID': 'count',
             'DOLLARAMOUNTHIGH': ['sum', 'mean'],
-            'predicted_pain_suffering': ['sum', 'mean'],
-            'SETTLEMENT_DAYS': 'mean',
+            'CAUSATION_HIGH_RECOMMENDATION': ['sum', 'mean'],
             'variance_pct': 'mean'
         }).reset_index()
 
         year_severity.columns = ['year', 'severity_category', 'claim_count',
                                  'total_actual_settlement', 'avg_actual_settlement',
                                  'total_predicted_settlement', 'avg_predicted_settlement',
-                                 'avg_settlement_days', 'avg_variance_pct']
+                                 'avg_variance_pct']
 
         # Add variance counts efficiently
         year_severity['overprediction_count'] = 0
@@ -123,8 +122,8 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
             year_severity.at[idx, 'high_variance_count'] = int((subset['variance_pct'].abs() >= 15).sum())
 
         # 2. County-Year Summary
-        county_year = df.groupby(['COUNTYNAME', 'VENUESTATE', 'year', 'VENUE_RATING']).agg({
-            'claim_id': 'count',
+        county_year = df.groupby(['COUNTYNAME', 'VENUESTATE', 'year', 'VENUERATING']).agg({
+            'CLAIMID': 'count',
             'DOLLARAMOUNTHIGH': ['sum', 'mean'],
             'variance_pct': 'mean'
         }).reset_index()
@@ -146,30 +145,28 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
             county_year.at[idx, 'underprediction_count'] = int((subset['variance_pct'] < 0).sum())
 
         # 3. Injury Group Summary
-        injury_group = df.groupby(['INJURY_GROUP_CODE', 'CAUTION_LEVEL']).agg({
-            'claim_id': 'count',
+        injury_group = df.groupby(['PRIMARY_INJURYGROUP_CODE', 'CAUTION_LEVEL']).agg({
+            'CLAIMID': 'count',
             'DOLLARAMOUNTHIGH': ['mean', 'sum'],
-            'predicted_pain_suffering': 'mean',
-            'variance_pct': 'mean',
-            'SETTLEMENT_DAYS': 'mean'
+            'CAUSATION_HIGH_RECOMMENDATION': 'mean',
+            'variance_pct': 'mean'
         }).reset_index()
 
         injury_group.columns = ['injury_group', 'severity_category', 'claim_count',
                                 'avg_settlement', 'total_settlement', 'avg_predicted',
-                                'avg_variance_pct', 'avg_settlement_days']
+                                'avg_variance_pct']
         injury_group['body_region'] = 'General'
 
         # 4. Adjuster Performance
-        adjuster_perf = df.groupby('adjuster').agg({
-            'claim_id': 'count',
+        adjuster_perf = df.groupby('ADJUSTERNAME').agg({
+            'CLAIMID': 'count',
             'DOLLARAMOUNTHIGH': 'mean',
-            'predicted_pain_suffering': 'mean',
-            'variance_pct': 'mean',
-            'SETTLEMENT_DAYS': 'mean'
+            'CAUSATION_HIGH_RECOMMENDATION': 'mean',
+            'variance_pct': 'mean'
         }).reset_index()
 
         adjuster_perf.columns = ['adjuster_name', 'claim_count', 'avg_actual_settlement',
-                                 'avg_predicted_settlement', 'avg_variance_pct', 'avg_settlement_days']
+                                 'avg_predicted_settlement', 'avg_variance_pct']
 
         adjuster_perf['high_variance_count'] = 0
         adjuster_perf['high_variance_pct'] = 0.0
@@ -177,7 +174,7 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
         adjuster_perf['underprediction_count'] = 0
 
         for idx, row in adjuster_perf.iterrows():
-            subset = df[df['adjuster'] == row['adjuster_name']]
+            subset = df[df['ADJUSTERNAME'] == row['adjuster_name']]
             hvc = int((subset['variance_pct'].abs() >= 15).sum())
             adjuster_perf.at[idx, 'high_variance_count'] = hvc
             adjuster_perf.at[idx, 'high_variance_pct'] = round((hvc / row['claim_count'] * 100) if row['claim_count'] > 0 else 0, 2)
@@ -185,10 +182,10 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
             adjuster_perf.at[idx, 'underprediction_count'] = int((subset['variance_pct'] < 0).sum())
 
         # 5. Venue Analysis
-        venue_analysis = df.groupby(['VENUE_RATING', 'VENUESTATE', 'COUNTYNAME']).agg({
-            'claim_id': 'count',
+        venue_analysis = df.groupby(['VENUERATING', 'VENUESTATE', 'COUNTYNAME']).agg({
+            'CLAIMID': 'count',
             'DOLLARAMOUNTHIGH': 'mean',
-            'predicted_pain_suffering': 'mean',
+            'CAUSATION_HIGH_RECOMMENDATION': 'mean',
             'variance_pct': 'mean',
             'RATINGWEIGHT': 'mean'
         }).reset_index()
@@ -201,7 +198,7 @@ async def get_aggregated_data(use_fast: bool = Query(True, description="Use mate
         venue_analysis['high_variance_pct'] = 0.0
 
         for idx, row in venue_analysis.iterrows():
-            subset = df[(df['VENUE_RATING'] == row['venue_rating']) & (df['COUNTYNAME'] == row['county'])]
+            subset = df[(df['VENUERATING'] == row['venue_rating']) & (df['COUNTYNAME'] == row['county'])]
             hvc = int((subset['variance_pct'].abs() >= 15).sum())
             venue_analysis.at[idx, 'high_variance_count'] = hvc
             venue_analysis.at[idx, 'high_variance_pct'] = round((hvc / row['claim_count'] * 100) if row['claim_count'] > 0 else 0, 2)
@@ -263,19 +260,19 @@ async def get_recent_trends(months: int = Query(12, ge=1, le=36, description="Mo
             raise HTTPException(status_code=404, detail="No claims data")
 
         df = pd.DataFrame(claims)
-        df['claim_date'] = pd.to_datetime(df['claim_date'], errors='coerce')
+        df['CLAIMCLOSEDDATE'] = pd.to_datetime(df['CLAIMCLOSEDDATE'], errors='coerce')
 
         # Filter recent data
         cutoff_date = datetime.now() - timedelta(days=months * 30)
-        recent_df = df[df['claim_date'] >= cutoff_date]
+        recent_df = df[df['CLAIMCLOSEDDATE'] >= cutoff_date]
 
         if len(recent_df) == 0:
             return {"message": "No recent data available", "trends": []}
 
         # Monthly trends
-        recent_df['month'] = recent_df['claim_date'].dt.to_period('M')
+        recent_df['month'] = recent_df['CLAIMCLOSEDDATE'].dt.to_period('M')
         monthly_trends = recent_df.groupby('month').agg({
-            'claim_id': 'count',
+            'CLAIMID': 'count',
             'variance_pct': ['mean', 'std', 'median'],
             'DOLLARAMOUNTHIGH': 'mean'
         }).reset_index()

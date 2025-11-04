@@ -21,7 +21,11 @@ class DataService:
         try:
             # Run in executor to avoid blocking
             loop = asyncio.get_event_loop()
-            df = await loop.run_in_executor(None, pd.read_csv, file_path)
+            # Use low_memory=False to avoid mixed-type chunk inference on large files
+            df = await loop.run_in_executor(
+                None,
+                lambda: pd.read_csv(file_path, low_memory=False)
+            )
             logger.info(f"Loaded {len(df)} records from {file_path}")
             return df
         except Exception as e:
@@ -47,16 +51,18 @@ class DataService:
         try:
             df = await self.load_csv_file(settings.CSV_FILE_PATH)
 
-            # Apply filters
+            # Apply filters - UPDATED FOR ACTUAL COLUMN NAMES
             if filters:
                 if filters.get('injury_group'):
-                    df = df[df['InjuryGroup'].isin(filters['injury_group'])]
+                    df = df[df['PRIMARY_INJURYGROUP_CODE'].isin(filters['injury_group'])]
                 if filters.get('adjuster'):
-                    df = df[df['Adjuster'].isin(filters['adjuster'])]
+                    df = df[df['ADJUSTERNAME'].isin(filters['adjuster'])]
                 if filters.get('state'):
-                    df = df[df['State'].isin(filters['state'])]
+                    df = df[df['VENUESTATE'].isin(filters['state'])]
                 if filters.get('year'):
-                    df = df[df['SettlementYear'].isin(filters['year'])]
+                    # Extract year from CLAIMCLOSEDDATE
+                    df['year'] = pd.to_datetime(df['CLAIMCLOSEDDATE'], errors='coerce').dt.year
+                    df = df[df['year'].isin(filters['year'])]
 
             total = len(df)
             start_idx = (page - 1) * page_size
@@ -105,13 +111,19 @@ class DataService:
                 df = await self.load_csv_file(settings.CSV_FILE_PATH)
 
             total_claims = len(df)
-            total_settlement = df['SettlementAmount'].sum()
-            avg_settlement = df['SettlementAmount'].mean()
-            median_settlement = df['SettlementAmount'].median()
+            # Use DOLLARAMOUNTHIGH as actual settlement amount
+            total_settlement = df['DOLLARAMOUNTHIGH'].sum()
+            avg_settlement = df['DOLLARAMOUNTHIGH'].mean()
+            median_settlement = df['DOLLARAMOUNTHIGH'].median()
 
-            # Calculate variance metrics
-            df['Variance'] = df['ModelPrediction'] - df['ConsensusValue']
-            df['VariancePct'] = (df['Variance'] / df['ConsensusValue']) * 100
+            # Calculate variance metrics - UPDATED FOR ACTUAL COLUMN NAMES
+            # Variance = Actual - Predicted
+            df['Variance'] = df['DOLLARAMOUNTHIGH'] - df['CAUSATION_HIGH_RECOMMENDATION']
+            df['VariancePct'] = np.where(
+                df['CAUSATION_HIGH_RECOMMENDATION'] != 0,
+                (df['Variance'] / df['CAUSATION_HIGH_RECOMMENDATION']) * 100,
+                0
+            )
 
             avg_variance = df['Variance'].mean()
             avg_variance_pct = df['VariancePct'].mean()
@@ -138,12 +150,15 @@ class DataService:
         try:
             df = await self.load_csv_file(settings.CSV_FILE_PATH)
 
+            # Extract year from CLAIMCLOSEDDATE for filter options
+            df['year'] = pd.to_datetime(df['CLAIMCLOSEDDATE'], errors='coerce').dt.year
+
             return {
-                "injury_groups": sorted(df['InjuryGroup'].dropna().unique().tolist()),
-                "adjusters": sorted(df['Adjuster'].dropna().unique().tolist()),
-                "states": sorted(df['State'].dropna().unique().tolist()),
-                "counties": sorted(df['County'].dropna().unique().tolist()),
-                "years": sorted(df['SettlementYear'].dropna().unique().tolist())
+                "injury_groups": sorted(df['PRIMARY_INJURYGROUP_CODE'].dropna().unique().tolist()),
+                "adjusters": sorted(df['ADJUSTERNAME'].dropna().unique().tolist()),
+                "states": sorted(df['VENUESTATE'].dropna().unique().tolist()),
+                "counties": sorted(df['COUNTYNAME'].dropna().unique().tolist()),
+                "years": sorted([int(y) for y in df['year'].dropna().unique().tolist()])
             }
         except Exception as e:
             logger.error(f"Error getting filter options: {str(e)}")

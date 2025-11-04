@@ -77,22 +77,22 @@ class DataServiceSQLite:
             def query_db():
                 query = session.query(Claim)
 
-                # Apply filters
+                # Apply filters - UPDATED FOR ACTUAL COLUMN NAMES
                 if filters:
                     if filters.get('injury_group'):
-                        query = query.filter(Claim.INJURY_GROUP_CODE.in_(filters['injury_group']))
+                        query = query.filter(Claim.PRIMARY_INJURYGROUP_CODE.in_(filters['injury_group']))
                     if filters.get('adjuster'):
-                        query = query.filter(Claim.adjuster.in_(filters['adjuster']))
+                        query = query.filter(Claim.ADJUSTERNAME.in_(filters['adjuster']))
                     if filters.get('county'):
                         query = query.filter(Claim.COUNTYNAME.in_(filters['county']))
                     if filters.get('venue_rating'):
-                        query = query.filter(Claim.VENUE_RATING.in_(filters['venue_rating']))
+                        query = query.filter(Claim.VENUERATING.in_(filters['venue_rating']))
                     if filters.get('min_variance'):
                         query = query.filter(Claim.variance_pct >= filters['min_variance'])
                     if filters.get('max_variance'):
                         query = query.filter(Claim.variance_pct <= filters['max_variance'])
                     if filters.get('year'):
-                        query = query.filter(Claim.claim_date.like(f"{filters['year']}%"))
+                        query = query.filter(Claim.CLAIMCLOSEDDATE.like(f"{filters['year']}%"))
 
                 # Get total count before pagination
                 total = query.count()
@@ -445,13 +445,35 @@ class DataServiceSQLite:
             return False
 
     def _claim_to_dict(self, claim: Claim) -> Dict[str, Any]:
-        """Convert Claim object to dictionary"""
+        """Convert Claim object to dictionary - UPDATED FOR ACTUAL SCHEMA"""
         return {
-            'claim_id': claim.claim_id,
-            'VERSIONID': claim.VERSIONID,
-            'claim_date': claim.claim_date,
-            'DURATIONTOREPORT': claim.DURATIONTOREPORT,
+            # Core identifiers
+            'CLAIMID': claim.CLAIMID,
+            'EXPSR_NBR': claim.EXPSR_NBR,
+
+            # Dates
+            'CLAIMCLOSEDDATE': claim.CLAIMCLOSEDDATE,
+            'INCIDENTDATE': claim.INCIDENTDATE,
+
+            # Financial
+            'CAUSATION_HIGH_RECOMMENDATION': claim.CAUSATION_HIGH_RECOMMENDATION,
+            'SETTLEMENTAMOUNT': claim.SETTLEMENTAMOUNT,
             'DOLLARAMOUNTHIGH': claim.DOLLARAMOUNTHIGH,
+            'GENERALS': claim.GENERALS,
+
+            # Version and duration
+            'VERSIONID': claim.VERSIONID,
+            'DURATIONTOREPORT': claim.DURATIONTOREPORT,
+
+            # Person info
+            'ADJUSTERNAME': claim.ADJUSTERNAME,
+            'HASATTORNEY': claim.HASATTORNEY,
+            'AGE': claim.AGE,
+            'GENDER': claim.GENDER,
+            'OCCUPATION_AVAILABLE': claim.OCCUPATION_AVAILABLE,
+            'OCCUPATION': claim.OCCUPATION,
+
+            # Injury info
             'ALL_BODYPARTS': claim.ALL_BODYPARTS,
             'ALL_INJURIES': claim.ALL_INJURIES,
             'ALL_INJURYGROUP_CODES': claim.ALL_INJURYGROUP_CODES,
@@ -462,34 +484,71 @@ class DataServiceSQLite:
             'INJURY_COUNT': claim.INJURY_COUNT,
             'BODYPART_COUNT': claim.BODYPART_COUNT,
             'INJURYGROUP_COUNT': claim.INJURYGROUP_COUNT,
+            'BODY_REGION': claim.BODY_REGION,
+
+            # Settlement timing
             'SETTLEMENT_DAYS': claim.SETTLEMENT_DAYS,
             'SETTLEMENT_MONTHS': claim.SETTLEMENT_MONTHS,
             'SETTLEMENT_YEARS': claim.SETTLEMENT_YEARS,
-            'IMPACT': claim.IMPACT,
+            'SETTLEMENT_SPEED_CATEGORY': claim.SETTLEMENT_SPEED_CATEGORY,
+
+            # Location and venue
+            'IOL': claim.IOL,
             'COUNTYNAME': claim.COUNTYNAME,
             'VENUESTATE': claim.VENUESTATE,
-            'VENUE_RATING': claim.VENUE_RATING,
+            'VENUERATINGTEXT': claim.VENUERATINGTEXT,
+            'VENUERATINGPOINT': claim.VENUERATINGPOINT,
             'RATINGWEIGHT': claim.RATINGWEIGHT,
-            'INJURY_GROUP_CODE': claim.INJURY_GROUP_CODE,
-            'CAUSATION__HIGH_RECOMMENDATION': claim.CAUSATION__HIGH_RECOMMENDATION,
+            'VENUERATING': claim.VENUERATING,
+            'VULNERABLECLAIMANT': claim.VULNERABLECLAIMANT,
+
+            # Calculated fields
             'SEVERITY_SCORE': claim.SEVERITY_SCORE,
             'CAUTION_LEVEL': claim.CAUTION_LEVEL,
-            'adjuster': claim.adjuster,
-            'predicted_pain_suffering': claim.predicted_pain_suffering,
             'variance_pct': claim.variance_pct,
-            'causation_probability': claim.causation_probability,
-            'causation_tx_delay': claim.causation_tx_delay,
-            'causation_tx_gaps': claim.causation_tx_gaps,
-            # causation_compliance removed - duplicate of Causation_Compliance
-            'severity_allowed_tx_period': claim.severity_allowed_tx_period,
-            'severity_initial_tx': claim.severity_initial_tx,
-            'severity_injections': claim.severity_injections,
-            'severity_objective_findings': claim.severity_objective_findings,
-            'severity_pain_mgmt': claim.severity_pain_mgmt,
-            'severity_type_tx': claim.severity_type_tx,
-            'severity_injury_site': claim.severity_injury_site,
-            'severity_code': claim.severity_code,
-            # Include all extended features as needed
+
+            # Clinical features (40+)
+            'Advanced_Pain_Treatment': claim.Advanced_Pain_Treatment,
+            'Causation_Compliance': claim.Causation_Compliance,
+            'Clinical_Findings': claim.Clinical_Findings,
+            'Cognitive_Symptoms': claim.Cognitive_Symptoms,
+            'Complete_Disability_Duration': claim.Complete_Disability_Duration,
+            'Concussion_Diagnosis': claim.Concussion_Diagnosis,
+            'Consciousness_Impact': claim.Consciousness_Impact,
+            'Consistent_Mechanism': claim.Consistent_Mechanism,
+            'Dental_Procedure': claim.Dental_Procedure,
+            'Dental_Treatment': claim.Dental_Treatment,
+            'Dental_Visibility': claim.Dental_Visibility,
+            'Emergency_Treatment': claim.Emergency_Treatment,
+            'Fixation_Method': claim.Fixation_Method,
+            'Head_Trauma': claim.Head_Trauma,
+            'Immobilization_Used': claim.Immobilization_Used,
+            'Injury_Count_Feature': claim.Injury_Count_Feature,
+            'Injury_Extent': claim.Injury_Extent,
+            'Injury_Laterality': claim.Injury_Laterality,
+            'Injury_Location': claim.Injury_Location,
+            'Injury_Type': claim.Injury_Type,
+            'Mobility_Assistance': claim.Mobility_Assistance,
+            'Movement_Restriction': claim.Movement_Restriction,
+            'Nerve_Involvement': claim.Nerve_Involvement,
+            'Pain_Management': claim.Pain_Management,
+            'Partial_Disability_Duration': claim.Partial_Disability_Duration,
+            'Physical_Symptoms': claim.Physical_Symptoms,
+            'Physical_Therapy': claim.Physical_Therapy,
+            'Prior_Treatment': claim.Prior_Treatment,
+            'Recovery_Duration': claim.Recovery_Duration,
+            'Repair_Type': claim.Repair_Type,
+            'Respiratory_Issues': claim.Respiratory_Issues,
+            'Soft_Tissue_Damage': claim.Soft_Tissue_Damage,
+            'Special_Treatment': claim.Special_Treatment,
+            'Surgical_Intervention': claim.Surgical_Intervention,
+            'Symptom_Timeline': claim.Symptom_Timeline,
+            'Treatment_Compliance': claim.Treatment_Compliance,
+            'Treatment_Course': claim.Treatment_Course,
+            'Treatment_Delays': claim.Treatment_Delays,
+            'Treatment_Level': claim.Treatment_Level,
+            'Treatment_Period_Considered': claim.Treatment_Period_Considered,
+            'Vehicle_Impact': claim.Vehicle_Impact,
         }
 
     def _weight_to_dict(self, weight: Weight) -> Dict[str, Any]:

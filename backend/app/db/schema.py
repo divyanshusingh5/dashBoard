@@ -23,13 +23,22 @@ class Claim(Base):
 
     # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)
-    claim_id = Column(String(100), unique=True, nullable=False, index=True)
+
+    # Core identifiers - ACTUAL DATA FORMAT
+    CLAIMID = Column(Integer, unique=True, nullable=False, index=True)
+    EXPSR_NBR = Column(String(50))
 
     # Core fields
     VERSIONID = Column(Integer, index=True)
-    claim_date = Column(String(50), index=True)  # Store as string, parse when needed
+    CLAIMCLOSEDDATE = Column(String(50), index=True)  # Store as string, parse when needed
+    INCIDENTDATE = Column(String(50))
     DURATIONTOREPORT = Column(Float)
-    DOLLARAMOUNTHIGH = Column(Float, index=True)
+
+    # Financial - ACTUAL DATA FORMAT
+    CAUSATION_HIGH_RECOMMENDATION = Column(Float)  # Predicted settlement
+    SETTLEMENTAMOUNT = Column(Integer)
+    DOLLARAMOUNTHIGH = Column(Float, index=True)  # Actual settlement amount
+    GENERALS = Column(Float)
 
     # Injury information
     ALL_BODYPARTS = Column(Text)
@@ -43,105 +52,99 @@ class Claim(Base):
     BODYPART_COUNT = Column(Integer)
     INJURYGROUP_COUNT = Column(Integer)
 
-    # Settlement information
-    SETTLEMENT_DAYS = Column(Integer)
-    SETTLEMENT_MONTHS = Column(Integer)
-    SETTLEMENT_YEARS = Column(Integer)
+    # Person information
+    HASATTORNEY = Column(String(10))
+    AGE = Column(Integer)
+    GENDER = Column(String(10))
+    OCCUPATION_AVAILABLE = Column(Integer)
+    OCCUPATION = Column(String(200))
+    ADJUSTERNAME = Column(String(100), index=True)
 
-    # Location and venue
-    IMPACT = Column(Integer, index=True)
+    # Location and venue - ACTUAL DATA FORMAT
+    IOL = Column(Integer, index=True)  # Impact on life (was IMPACT)
     COUNTYNAME = Column(String(100), index=True)
     VENUESTATE = Column(String(50), index=True)
-    VENUE_RATING = Column(String(50), index=True)
-    RATINGWEIGHT = Column(Float)
-    INJURY_GROUP_CODE = Column(String(50), index=True)
+    VENUERATINGTEXT = Column(String(50))  # Text description of venue rating
+    VENUERATINGPOINT = Column(Float)  # Numeric venue rating point
+    RATINGWEIGHT = Column(Float)  # Venue weighting
+    VENUERATING = Column(String(50), index=True)  # Defense/Neutral/Plaintiff Friendly
+    VULNERABLECLAIMANT = Column(String(50))
+    BODY_REGION = Column(String(100))
 
-    # Severity and caution
-    CAUSATION__HIGH_RECOMMENDATION = Column(Float)
+    # Settlement timing
+    SETTLEMENT_DAYS = Column(Integer)
+    SETTLEMENT_MONTHS = Column(Integer)
+    SETTLEMENT_YEARS = Column(Float)
+    SETTLEMENT_SPEED_CATEGORY = Column(String(50))
+
+    # Calculated fields
     SEVERITY_SCORE = Column(Float, index=True)
     CAUTION_LEVEL = Column(String(50), index=True)
+    variance_pct = Column(Float, index=True)  # Calculated: (DOLLARAMOUNTHIGH - CAUSATION_HIGH_RECOMMENDATION) / CAUSATION_HIGH_RECOMMENDATION * 100
 
-    # Adjuster and predictions
-    adjuster = Column(String(100), index=True)
-    predicted_pain_suffering = Column(Float)
-    variance_pct = Column(Float, index=True)
+    # Extended clinical factors (40+ feature columns)
+    # Note: In CSV these have single quotes, in DB we use without quotes for column names
+    Advanced_Pain_Treatment = Column(String(200))
+    Causation_Compliance = Column(String(200))
+    Clinical_Findings = Column(String(200))
+    Cognitive_Symptoms = Column(String(200))
+    Complete_Disability_Duration = Column(String(200))
+    Concussion_Diagnosis = Column(String(200))
+    Consciousness_Impact = Column(String(200))
+    Consistent_Mechanism = Column(String(200))
+    Dental_Procedure = Column(String(200))
+    Dental_Treatment = Column(String(200))
+    Dental_Visibility = Column(String(200))
+    Emergency_Treatment = Column(String(200))
+    Fixation_Method = Column(String(200))
+    Head_Trauma = Column(String(200))
+    Immobilization_Used = Column(String(200))
+    Injury_Count_Feature = Column(String(200))  # This is 'Injury_Count' in CSV
+    Injury_Extent = Column(String(200))
+    Injury_Laterality = Column(String(200))
+    Injury_Location = Column(String(200))
+    Injury_Type = Column(String(200))
+    Mobility_Assistance = Column(String(200))
+    Movement_Restriction = Column(String(200))
+    Nerve_Involvement = Column(String(200))
+    Pain_Management = Column(String(200))
+    Partial_Disability_Duration = Column(String(200))
+    Physical_Symptoms = Column(String(200))
+    Physical_Therapy = Column(String(200))
+    Prior_Treatment = Column(String(200))
+    Recovery_Duration = Column(String(200))
+    Repair_Type = Column(String(200))
+    Respiratory_Issues = Column(String(200))
+    Soft_Tissue_Damage = Column(String(200))
+    Special_Treatment = Column(String(200))
+    Surgical_Intervention = Column(String(200))
+    Symptom_Timeline = Column(String(200))
+    Treatment_Compliance = Column(String(200))
+    Treatment_Course = Column(String(200))
+    Treatment_Delays = Column(String(200))
+    Treatment_Level = Column(String(200))
+    Treatment_Period_Considered = Column(String(200))
+    Vehicle_Impact = Column(String(200))
 
-    # Causation factors
-    causation_probability = Column(Float)
-    causation_tx_delay = Column(Float)
-    causation_tx_gaps = Column(Float)
-    # causation_compliance = Column(Float)  # Removed: duplicate of Causation_Compliance below
-
-    # Severity factors
-    severity_allowed_tx_period = Column(Float)
-    severity_initial_tx = Column(Float)
-    severity_injections = Column(Float)
-    severity_objective_findings = Column(Float)
-    severity_pain_mgmt = Column(Float)
-    severity_type_tx = Column(Float)
-    severity_injury_site = Column(Float)
-    severity_code = Column(Float)
-
-    # Extended clinical factors (51 total feature columns)
-    Advanced_Pain_Treatment = Column(String(50))
-    Causation_Compliance = Column(String(50))
-    Clinical_Findings = Column(String(50))
-    Cognitive_Symptoms = Column(String(50))
-    Complete_Disability_Duration = Column(String(50))
-    Concussion_Diagnosis = Column(String(50))
-    Consciousness_Impact = Column(String(50))
-    Consistent_Mechanism = Column(String(50))
-    Dental_Procedure = Column(String(50))
-    Emergency_Treatment = Column(String(50))
-    Fixation_Method = Column(String(50))
-    Head_Trauma = Column(String(50))
-    Immobilization_Used = Column(String(50))
-    Injury_Count_Feature = Column(String(50))
-    Injury_Extent = Column(String(50))
-    Injury_Laterality = Column(String(50))
-    Injury_Location = Column(String(50))
-    Injury_Type = Column(String(50))
-    Mobility_Assistance = Column(String(50))
-    Movement_Restriction = Column(String(50))
-    Nerve_Involvement = Column(String(50))
-    Pain_Management = Column(String(50))
-    Partial_Disability_Duration = Column(String(50))
-    Physical_Symptoms = Column(String(50))
-    Physical_Therapy = Column(String(50))
-    Prior_Treatment = Column(String(50))
-    Recovery_Duration = Column(String(50))
-    Repair_Type = Column(String(50))
-    Respiratory_Issues = Column(String(50))
-    Soft_Tissue_Damage = Column(String(50))
-    Special_Treatment = Column(String(50))
-    Surgical_Intervention = Column(String(50))
-    Symptom_Timeline = Column(String(50))
-    Treatment_Compliance = Column(String(50))
-    Treatment_Course = Column(String(50))
-    Treatment_Delays = Column(String(50))
-    Treatment_Level = Column(String(50))
-    Treatment_Period_Considered = Column(String(50))
-    Vehicle_Impact = Column(String(50))
-
-    # Composite indexes for common queries - optimized for 5M+ claims
+    # Composite indexes for common queries - optimized for 5M+ claims (ACTUAL DATA FORMAT)
     __table_args__ = (
         # Critical for venue shift analysis
-        Index('idx_county_venue', 'COUNTYNAME', 'VENUE_RATING'),
-        Index('idx_injury_severity_caution', 'INJURY_GROUP_CODE', 'CAUTION_LEVEL', 'IMPACT'),
-        Index('idx_date_venue', 'claim_date', 'VENUE_RATING'),
-        Index('idx_date_county', 'claim_date', 'COUNTYNAME'),
+        Index('idx_county_venue', 'COUNTYNAME', 'VENUERATING'),
+        Index('idx_injury_severity_caution', 'PRIMARY_INJURYGROUP_CODE', 'CAUTION_LEVEL', 'IOL'),
+        Index('idx_date_venue', 'CLAIMCLOSEDDATE', 'VENUERATING'),
+        Index('idx_date_county', 'CLAIMCLOSEDDATE', 'COUNTYNAME'),
 
         # For adjuster performance analysis
-        Index('idx_adjuster_date', 'adjuster', 'claim_date'),
-        Index('idx_adjuster_variance', 'adjuster', 'variance_pct'),
+        Index('idx_adjuster_date', 'ADJUSTERNAME', 'CLAIMCLOSEDDATE'),
+        Index('idx_adjuster_variance', 'ADJUSTERNAME', 'variance_pct'),
 
         # For overview and filtering
-        Index('idx_date_variance', 'claim_date', 'variance_pct'),
-        Index('idx_venue_state', 'VENUESTATE', 'VENUE_RATING'),
+        Index('idx_date_variance', 'CLAIMCLOSEDDATE', 'variance_pct'),
+        Index('idx_venue_state', 'VENUESTATE', 'VENUERATING'),
 
         # For isolated factor analysis with full controls
-        Index('idx_county_venue_injury', 'COUNTYNAME', 'VENUE_RATING', 'INJURY_GROUP_CODE'),
-        Index('idx_county_venue_injury_severity', 'COUNTYNAME', 'VENUE_RATING', 'INJURY_GROUP_CODE', 'CAUTION_LEVEL'),
+        Index('idx_county_venue_injury', 'COUNTYNAME', 'VENUERATING', 'PRIMARY_INJURYGROUP_CODE'),
+        Index('idx_county_venue_injury_severity', 'COUNTYNAME', 'VENUERATING', 'PRIMARY_INJURYGROUP_CODE', 'CAUTION_LEVEL'),
     )
 
 

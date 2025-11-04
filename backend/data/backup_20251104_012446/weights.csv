@@ -1,0 +1,42 @@
+factor_name,base_weight,min_weight,max_weight,category,description
+Advanced_Pain_Treatment,0.08,0.03,0.15,Treatment,Use of advanced pain management
+Causation_Compliance,0.05,0.01,0.1,Treatment,Treatment compliance impact
+Clinical_Findings,0.09,0.04,0.16,Clinical,Clinical examination findings
+Cognitive_Symptoms,0.07,0.02,0.13,Clinical,Presence of cognitive symptoms
+Complete_Disability_Duration,0.11,0.05,0.2,Disability,Duration of complete disability
+Concussion_Diagnosis,0.08,0.03,0.14,Clinical,Concussion diagnosis present
+Consciousness_Impact,0.09,0.04,0.16,Clinical,Loss of consciousness factor
+Consistent_Mechanism,0.06,0.02,0.11,Causation,Injury mechanism consistency
+Dental_Procedure,0.05,0.01,0.1,Treatment,Dental procedures required
+Emergency_Treatment,0.1,0.04,0.18,Treatment,Emergency room treatment
+Fixation_Method,0.07,0.02,0.13,Treatment,Surgical fixation method used
+Head_Trauma,0.12,0.06,0.22,Clinical,Head trauma severity
+Immobilization_Used,0.06,0.02,0.11,Treatment,Immobilization/casting used
+Injury_Count,0.08,0.03,0.14,Clinical,Number of distinct injuries
+Injury_Extent,0.1,0.04,0.18,Clinical,Extent/severity of injury
+Injury_Laterality,0.04,0.01,0.08,Clinical,Bilateral vs unilateral injury
+Injury_Location,0.09,0.04,0.16,Clinical,Anatomical location of injury
+Injury_Type,0.08,0.03,0.15,Clinical,Type of injury sustained
+Mobility_Assistance,0.07,0.02,0.13,Disability,Need for mobility aids
+Movement_Restriction,0.06,0.02,0.11,Disability,Movement restriction level
+Nerve_Involvement,0.11,0.05,0.2,Clinical,Nerve damage involvement
+Pain_Management,0.08,0.03,0.15,Treatment,Pain management approach
+Partial_Disability_Duration,0.09,0.03,0.16,Disability,Duration of partial disability
+Physical_Symptoms,0.07,0.02,0.13,Clinical,Physical symptom severity
+Physical_Therapy,0.08,0.03,0.14,Treatment,Physical therapy intensity
+Prior_Treatment,0.05,0.01,0.1,Treatment,Prior treatment history
+Recovery_Duration,0.1,0.04,0.18,Clinical,Total recovery time
+Repair_Type,0.08,0.03,0.15,Treatment,Surgical repair type
+Respiratory_Issues,0.09,0.03,0.16,Clinical,Respiratory complications
+Soft_Tissue_Damage,0.06,0.02,0.11,Clinical,Soft tissue damage extent
+Special_Treatment,0.07,0.02,0.13,Treatment,Specialized treatment required
+Surgical_Intervention,0.12,0.06,0.22,Treatment,Surgical intervention performed
+Symptom_Timeline,0.06,0.02,0.11,Clinical,Symptom onset and progression
+Treatment_Compliance,0.05,0.01,0.1,Treatment,Overall treatment compliance
+Treatment_Course,0.08,0.03,0.15,Treatment,Treatment course complexity
+Treatment_Delays,0.07,0.02,0.13,Treatment,Delays in treatment timeline
+Treatment_Level,0.09,0.04,0.16,Treatment,Treatment intensity level
+Treatment_Period_Considered,0.06,0.02,0.11,Treatment,Treatment period considered
+Vehicle_Impact,0.08,0.03,0.14,Clinical,Vehicle impact severity
+Dental_Treatment,0.08,0.03,0.15,Treatment,Dental Treatment factor
+Dental_Visibility,0.08,0.03,0.15,Clinical,Dental Visibility factor

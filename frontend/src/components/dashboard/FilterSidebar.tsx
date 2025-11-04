@@ -123,7 +123,7 @@ export function FilterSidebar({ filters, counties, years, injuryGroups, venueRat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Years</SelectItem>
-                  {years.map(year => (
+                  {years.filter(year => year && year.toString().trim() !== '').map(year => (
                     <SelectItem key={year} value={year}>{year}</SelectItem>
                   ))}
                 </SelectContent>
@@ -141,7 +141,7 @@ export function FilterSidebar({ filters, counties, years, injuryGroups, venueRat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Injury Groups</SelectItem>
-                  {injuryGroups.map(group => (
+                  {injuryGroups.filter(group => group && group.trim() !== '').map(group => (
                     <SelectItem key={group} value={group}>{group}</SelectItem>
                   ))}
                 </SelectContent>
@@ -159,7 +159,7 @@ export function FilterSidebar({ filters, counties, years, injuryGroups, venueRat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Counties</SelectItem>
-                  {counties.map(county => (
+                  {counties.filter(county => county && county.trim() !== '').map(county => (
                     <SelectItem key={county} value={county}>{county}</SelectItem>
                   ))}
                 </SelectContent>
@@ -213,7 +213,7 @@ export function FilterSidebar({ filters, counties, years, injuryGroups, venueRat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Ratings</SelectItem>
-                  {venueRatings.map(rating => (
+                  {venueRatings.filter(rating => rating && rating.trim() !== '').map(rating => (
                     <SelectItem key={rating} value={rating}>{rating}</SelectItem>
                   ))}
                 </SelectContent>

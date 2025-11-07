@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Calendar, BarChart3, Activity } from "lucide-react";
 import { AggregatedData } from "@/hooks/useAggregatedClaimsDataAPI";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -27,6 +27,17 @@ import {
   ComposedChart,
 } from "recharts";
 
+interface FilterState {
+  version: string;
+  injuryGroupCode: string;
+  county: string;
+  severityScore: string;
+  cautionLevel: string;
+  venueRating: string;
+  impact: string;
+  year: string;
+}
+
 interface OverviewTabAggregatedProps {
   data: AggregatedData;
   kpis: {
@@ -45,6 +56,7 @@ interface OverviewTabAggregatedProps {
     severityCategories: string[];
     adjusters: string[];
   };
+  filters: FilterState;
 }
 
 const COLORS = {
@@ -65,69 +77,71 @@ const COLORS = {
   }
 };
 
-export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions }: OverviewTabAggregatedProps) {
+export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions, filters }: OverviewTabAggregatedProps) {
   // REMOVED: Internal filter state - now using page-level filters from IndexAggregated
   // The data prop is already filtered by the parent component
 
   const [selectedVersion, setSelectedVersion] = useState<string>("all");
   const [compareVersions, setCompareVersions] = useState<boolean>(false);
 
+  // Executive Summary from materialized view
+  const [executiveSummaryData, setExecutiveSummaryData] = useState<any[]>([]);
+  const [loadingExecutiveSummary, setLoadingExecutiveSummary] = useState(true);
+
   // Use the already-filtered data passed from parent
   const filteredData = data;
   const kpis = initialKpis;
 
-  // Executive Summary with filtered data
-  const executiveSummary = useMemo(() => {
-    const severityPerformance = filteredData.yearSeverity.reduce((acc, item) => {
-      const existing = acc.find(s => s.severity === item.severity_category);
-      if (existing) {
-        existing.claimCount += item.claim_count;
-        existing.weightedVariance += Math.abs(item.avg_variance_pct) * item.claim_count;
-      } else {
-        acc.push({
-          severity: item.severity_category,
-          claimCount: item.claim_count,
-          weightedVariance: Math.abs(item.avg_variance_pct) * item.claim_count,
-        });
+  // Fetch executive summary data from mv_executive_summary materialized view
+  useEffect(() => {
+    const fetchExecutiveSummary = async () => {
+      try {
+        setLoadingExecutiveSummary(true);
+
+        // Build URL with filter parameters
+        const params = new URLSearchParams();
+        params.append('limit', '100');
+
+        // Apply filters if they are active (not 'all')
+        if (filters.year && filters.year !== 'all') {
+          params.append('year', filters.year);
+        }
+        if (filters.county && filters.county !== 'all') {
+          params.append('county', filters.county);
+        }
+        if (filters.severityScore && filters.severityScore !== 'all') {
+          // Map frontend severity filter to backend severity level
+          const severityMap: Record<string, string> = {
+            'low': 'Low',
+            'medium': 'Medium',
+            'high': 'High'
+          };
+          const severity = severityMap[filters.severityScore.toLowerCase()] || filters.severityScore;
+          params.append('severity', severity);
+        }
+        if (filters.injuryGroupCode && filters.injuryGroupCode !== 'all') {
+          params.append('injury_type', filters.injuryGroupCode);
+        }
+        if (filters.venueRating && filters.venueRating !== 'all') {
+          params.append('venue_rating', filters.venueRating);
+        }
+
+        const url = `http://localhost:8000/api/v1/aggregation/executive-summary?${params.toString()}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          setExecutiveSummaryData(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching executive summary:', error);
+      } finally {
+        setLoadingExecutiveSummary(false);
       }
-      return acc;
-    }, [] as any[]).map(s => ({
-      factor: `${s.severity} Severity`,
-      avgDeviation: s.claimCount > 0 ? s.weightedVariance / s.claimCount : 0,
-      claimCount: s.claimCount,
-      category: 'Severity',
-    }));
+    };
 
-    const injuryPerformance = filteredData.injuryGroup.reduce((acc, item) => {
-      const existing = acc.find(i => i.injuryGroup === item.injury_group);
-      if (existing) {
-        existing.claimCount += item.claim_count;
-        existing.weightedVariance += Math.abs(item.avg_variance_pct) * item.claim_count;
-      } else {
-        acc.push({
-          injuryGroup: item.injury_group,
-          claimCount: item.claim_count,
-          weightedVariance: Math.abs(item.avg_variance_pct) * item.claim_count,
-        });
-      }
-      return acc;
-    }, [] as any[]).map(i => ({
-      factor: `${i.injuryGroup} Injuries`,
-      avgDeviation: i.claimCount > 0 ? i.weightedVariance / i.claimCount : 0,
-      claimCount: i.claimCount,
-      category: 'Injury Type',
-    }));
-
-    const driverPerformance = data.varianceDrivers.slice(0, 5).map(d => ({
-      factor: `${d.factor_name}: ${d.factor_value}`,
-      avgDeviation: Math.abs(d.avg_variance_pct),
-      claimCount: d.claim_count,
-      category: 'Driver',
-    }));
-
-    return [...severityPerformance, ...injuryPerformance, ...driverPerformance]
-      .sort((a, b) => b.avgDeviation - a.avgDeviation);
-  }, [filteredData, data.varianceDrivers]);
+    fetchExecutiveSummary();
+  }, [filters.year, filters.county, filters.severityScore, filters.injuryGroupCode, filters.venueRating]); // Re-fetch when filters change
 
   // Chart data - Monthly variance trend
   const varianceByMonthData = useMemo(() => {
@@ -448,99 +462,173 @@ export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions }
         </Card>
       </div>
 
-      {/* Executive Summary Table - Improved */}
+      {/* Factor Combinations Where Model Isn't Performing Well - From Materialized View */}
       <Card className="border border-gray-200 shadow-md bg-white">
         <CardHeader className="bg-gradient-to-r from-purple-50 via-purple-50 to-blue-50 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2 text-gray-900 text-lg">
                 <Activity className="h-5 w-5 text-purple-600" />
-                Executive Summary: Factor Performance Analysis
+                Factor Combinations with Poor Model Performance
               </CardTitle>
               <CardDescription className="text-gray-600 mt-1">
-                Key factors ranked by average deviation • <span className="text-red-600 font-medium">High deviation</span> | <span className="text-orange-600 font-medium">Monitor</span> | <span className="text-green-600 font-medium">Good</span>
+                High variance factor combinations showing where the model isn't performing well • <span className="text-red-600 font-medium">Critical</span> | <span className="text-orange-600 font-medium">High Risk</span> | <span className="text-yellow-600 font-medium">Medium Risk</span>
               </CardDescription>
             </div>
+            {loadingExecutiveSummary && (
+              <div className="text-sm text-gray-500 flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                Loading...
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left p-4 font-semibold text-gray-700 w-16">Rank</th>
-                  <th className="text-left p-4 font-semibold text-gray-700">Factor</th>
-                  <th className="text-left p-4 font-semibold text-gray-700">Category</th>
-                  <th className="text-right p-4 font-semibold text-gray-700">Avg Deviation</th>
-                  <th className="text-right p-4 font-semibold text-gray-700">Claims</th>
-                  <th className="text-center p-4 font-semibold text-gray-700">Status</th>
+                  <th className="text-left p-2 font-semibold text-gray-700 sticky left-0 bg-gray-50">Rank</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">Severity</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">Injury Type</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">Body Part</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">Venue</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">County</th>
+                  <th className="text-left p-2 font-semibold text-gray-700">State</th>
+                  <th className="text-center p-2 font-semibold text-gray-700">IOL</th>
+                  <th className="text-center p-2 font-semibold text-gray-700">Ver</th>
+                  <th className="text-center p-2 font-semibold text-gray-700">Year</th>
+                  <th className="text-right p-2 font-semibold text-gray-700">Claims</th>
+                  <th className="text-right p-2 font-semibold text-gray-700">Avg Actual</th>
+                  <th className="text-right p-2 font-semibold text-gray-700">Avg Predicted</th>
+                  <th className="text-right p-2 font-semibold text-gray-700">Deviation %</th>
+                  <th className="text-right p-2 font-semibold text-gray-700">$ Error</th>
+                  <th className="text-center p-2 font-semibold text-gray-700 sticky right-0 bg-gray-50">Risk</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {executiveSummary.slice(0, 15).map((item, idx) => {
-                  const isGood = item.avgDeviation < 5;
-                  const isWarning = item.avgDeviation >= 5 && item.avgDeviation < 15;
-                  const isBad = item.avgDeviation >= 15;
+                {loadingExecutiveSummary ? (
+                  <tr>
+                    <td colSpan={15} className="p-8 text-center text-gray-500">
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                        <span>Loading factor combinations...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : executiveSummaryData.length === 0 ? (
+                  <tr>
+                    <td colSpan={15} className="p-8 text-center text-gray-500">
+                      No high variance factor combinations found
+                    </td>
+                  </tr>
+                ) : (
+                  executiveSummaryData.slice(0, 50).map((item, idx) => {
+                    const isCritical = item.risk_level === 'Critical';
+                    const isHighRisk = item.risk_level === 'High Risk';
+                    const isMediumRisk = item.risk_level === 'Medium Risk';
 
-                  return (
-                    <tr
-                      key={idx}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="p-4">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 font-bold text-sm">
-                          {idx + 1}
-                        </div>
-                      </td>
-                      <td className="p-4 font-medium text-gray-900">{item.factor}</td>
-                      <td className="p-4">
-                        <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">
-                          {item.category}
-                        </Badge>
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            isBad ? 'bg-red-500' : isWarning ? 'bg-orange-500' : 'bg-green-500'
-                          }`}></div>
-                          <span className={`font-semibold text-base ${
-                            isBad ? 'text-red-700' : isWarning ? 'text-orange-700' : 'text-green-700'
+                    return (
+                      <tr
+                        key={idx}
+                        className="hover:bg-purple-50 transition-colors"
+                      >
+                        <td className="p-2 sticky left-0 bg-white">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
+                            {idx + 1}
+                          </div>
+                        </td>
+                        <td className="p-2">
+                          <Badge variant="outline" className={`text-xs ${
+                            item.severity_level === 'High' ? 'border-red-300 text-red-700 bg-red-50' :
+                            item.severity_level === 'Medium' ? 'border-orange-300 text-orange-700 bg-orange-50' :
+                            'border-green-300 text-green-700 bg-green-50'
                           }`}>
-                            {item.avgDeviation.toFixed(2)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right text-gray-600 font-medium">
-                        {item.claimCount.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-center">
-                        {isBad && (
-                          <Badge variant="destructive" className="font-medium">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Action Needed
+                            {item.severity_level}
                           </Badge>
-                        )}
-                        {isWarning && (
-                          <Badge className="bg-orange-500 hover:bg-orange-600 font-medium">
-                            Monitor
-                          </Badge>
-                        )}
-                        {isGood && (
-                          <Badge className="bg-green-500 hover:bg-green-600 font-medium">
-                            ✓ Good
-                          </Badge>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td className="p-2 text-gray-700 max-w-[120px] truncate" title={item.injury_type}>
+                          {item.injury_type || 'N/A'}
+                        </td>
+                        <td className="p-2 text-gray-600 max-w-[100px] truncate" title={item.body_part}>
+                          {item.body_part || 'N/A'}
+                        </td>
+                        <td className="p-2 text-gray-600">
+                          {item.venue_rating || 'N/A'}
+                        </td>
+                        <td className="p-2 text-gray-700 font-medium">
+                          {item.county}
+                        </td>
+                        <td className="p-2 text-gray-600">
+                          {item.state}
+                        </td>
+                        <td className="p-2 text-center text-gray-700">
+                          {item.impact_on_life}
+                        </td>
+                        <td className="p-2 text-center text-gray-600">
+                          {item.version_id}
+                        </td>
+                        <td className="p-2 text-center text-gray-600">
+                          {item.year}
+                        </td>
+                        <td className="p-2 text-right text-gray-700 font-medium">
+                          {item.claim_count}
+                        </td>
+                        <td className="p-2 text-right text-gray-700 font-medium">
+                          ${Math.round(item.avg_actual).toLocaleString()}
+                        </td>
+                        <td className="p-2 text-right text-gray-600">
+                          ${Math.round(item.avg_predicted).toLocaleString()}
+                        </td>
+                        <td className="p-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${
+                              isCritical ? 'bg-red-500' : isHighRisk ? 'bg-orange-500' : 'bg-yellow-500'
+                            }`}></div>
+                            <span className={`font-bold text-sm ${
+                              isCritical ? 'text-red-700' : isHighRisk ? 'text-orange-700' : 'text-yellow-700'
+                            }`}>
+                              {item.abs_avg_deviation_pct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-2 text-right text-gray-700 font-medium">
+                          ${Math.round(item.avg_dollar_error).toLocaleString()}
+                        </td>
+                        <td className="p-2 text-center sticky right-0 bg-white">
+                          {isCritical && (
+                            <Badge variant="destructive" className="font-medium text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Critical
+                            </Badge>
+                          )}
+                          {isHighRisk && (
+                            <Badge className="bg-orange-500 hover:bg-orange-600 font-medium text-xs">
+                              High Risk
+                            </Badge>
+                          )}
+                          {isMediumRisk && (
+                            <Badge className="bg-yellow-500 hover:bg-yellow-600 font-medium text-xs">
+                              Medium
+                            </Badge>
+                          )}
+                          {!isCritical && !isHighRisk && !isMediumRisk && (
+                            <Badge className="bg-blue-500 hover:bg-blue-600 font-medium text-xs">
+                              Low Risk
+                            </Badge>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-          {executiveSummary.length > 15 && (
+          {executiveSummaryData.length > 50 && (
             <div className="p-4 bg-gray-50 border-t border-gray-200 text-center">
               <p className="text-sm text-gray-600">
-                Showing top 15 of {executiveSummary.length} factors
+                Showing top 50 of {executiveSummaryData.length} high variance factor combinations
               </p>
             </div>
           )}

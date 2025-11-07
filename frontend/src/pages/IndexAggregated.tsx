@@ -13,7 +13,8 @@ import { RecommendationsTabAggregated } from "@/components/tabs/RecommendationsT
 import { InjuryAnalysisTabAggregated } from "@/components/tabs/InjuryAnalysisTabAggregated";
 import { AdjusterPerformanceTabAggregated } from "@/components/tabs/AdjusterPerformanceTabAggregated";
 import { ModelPerformanceTabAggregated } from "@/components/tabs/ModelPerformanceTabAggregated";
-// import RecalibrationTab from "@/components/tabs/RecalibrationTab"; // DISABLED: Requires fixing claims.id schema issue
+import RecalibrationTab from "@/components/tabs/RecalibrationTab";
+import { VenueAnalysisTabAggregated } from "@/components/tabs/VenueAnalysisTabAggregated";
 import { useAggregatedClaimsDataAPI } from "@/hooks/useAggregatedClaimsDataAPI";
 import { FilterState } from "@/types/claims";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,27 +29,27 @@ const IndexAggregated = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // DISABLED: Recalibration tab - Requires fixing claims.id schema issue
-  // const [rawClaims, setRawClaims] = useState<any[]>([]);
-  // const [rawLoading, setRawLoading] = useState(false);
-  // const [rawError, setRawError] = useState<string | null>(null);
+  // Raw claims for Recalibration tab
+  const [rawClaims, setRawClaims] = useState<any[]>([]);
+  const [rawLoading, setRawLoading] = useState(false);
+  const [rawError, setRawError] = useState<string | null>(null);
 
-  // useEffect(() => {
-  //   if (activeTab === "recalibration" && rawClaims.length === 0 && !rawLoading) {
-  //     setRawLoading(true);
-  //     axios.get(`${API_BASE_URL}/claims/claims/full`, { timeout: 60000 })
-  //       .then(response => {
-  //         // Extract the claims array from the response
-  //         const claims = response.data.claims || response.data;
-  //         setRawClaims(Array.isArray(claims) ? claims : []);
-  //         setRawLoading(false);
-  //       })
-  //       .catch(err => {
-  //         setRawError(err.message);
-  //         setRawLoading(false);
-  //       });
-  //   }
-  // }, [activeTab]);
+  useEffect(() => {
+    if (activeTab === "recalibration" && rawClaims.length === 0 && !rawLoading) {
+      setRawLoading(true);
+      axios.get(`${API_BASE_URL}/claims/claims/full`, { timeout: 60000 })
+        .then(response => {
+          // Extract the claims array from the response
+          const claims = response.data.claims || response.data;
+          setRawClaims(Array.isArray(claims) ? claims : []);
+          setRawLoading(false);
+        })
+        .catch(err => {
+          setRawError(err.message);
+          setRawLoading(false);
+        });
+    }
+  }, [activeTab]);
 
   // Global filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -232,13 +233,14 @@ const IndexAggregated = () => {
             </div>
 
             <Tabs defaultValue="overview" className="w-full" onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5 mb-6">
+              <TabsList className="grid w-full grid-cols-7 mb-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                 <TabsTrigger value="injury">Injury Analysis</TabsTrigger>
+                <TabsTrigger value="venue">Venue Analysis</TabsTrigger>
                 <TabsTrigger value="adjuster">Adjuster Performance</TabsTrigger>
                 <TabsTrigger value="model">Model Performance</TabsTrigger>
-                {/* <TabsTrigger value="recalibration">Weight Recalibration</TabsTrigger> */}
+                <TabsTrigger value="recalibration">Weight Recalibration</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4">
@@ -246,7 +248,7 @@ const IndexAggregated = () => {
                   componentName="Overview Tab"
                   fallback={<TabErrorFallback tabName="Overview" />}
                 >
-                  <OverviewTabAggregated data={filteredData} kpis={filteredKpis} filterOptions={filterOptions} />
+                  <OverviewTabAggregated data={filteredData} kpis={filteredKpis} filterOptions={filterOptions} filters={filters} />
                 </ErrorBoundary>
               </TabsContent>
 
@@ -286,8 +288,16 @@ const IndexAggregated = () => {
                 </ErrorBoundary>
               </TabsContent>
 
-              {/* DISABLED: Recalibration tab - Requires fixing claims.id schema issue */}
-              {/* <TabsContent value="recalibration" className="space-y-4">
+              <TabsContent value="venue" className="space-y-4">
+                <ErrorBoundary
+                  componentName="Venue Analysis Tab"
+                  fallback={<TabErrorFallback tabName="Venue Analysis" />}
+                >
+                  <VenueAnalysisTabAggregated data={filteredData} />
+                </ErrorBoundary>
+              </TabsContent>
+
+              <TabsContent value="recalibration" className="space-y-4">
                 {activeTab === "recalibration" && (
                   <ErrorBoundary
                     componentName="Weight Recalibration Tab"
@@ -313,7 +323,7 @@ const IndexAggregated = () => {
                     )}
                   </ErrorBoundary>
                 )}
-              </TabsContent> */}
+              </TabsContent>
             </Tabs>
           </div>
         </main>

@@ -409,3 +409,260 @@ async def get_cache_status():
     except Exception as e:
         logger.error(f"Error getting cache status: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/executive-summary")
+async def get_executive_summary(
+    version_id: Optional[int] = Query(None, description="Filter by Version ID"),
+    year: Optional[int] = Query(None, description="Filter by Year"),
+    severity: Optional[str] = Query(None, description="Filter by Severity Level (Low/Medium/High)"),
+    county: Optional[str] = Query(None, description="Filter by County"),
+    injury_type: Optional[str] = Query(None, description="Filter by Injury Type"),
+    venue_rating: Optional[str] = Query(None, description="Filter by Venue Rating"),
+    limit: int = Query(100, description="Max number of results to return")
+):
+    """
+    Get executive summary with multi-factor performance analysis
+    Shows top variance factors across ALL dimensions (Severity, Injury, Venue, IOL, County)
+    """
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        def get_summary():
+            from sqlalchemy import text, create_engine
+            from pathlib import Path
+
+            db_path = Path('app/db/claims_analytics.db')
+            engine = create_engine(f'sqlite:///{db_path}')
+
+            with engine.connect() as conn:
+                # Build WHERE clause
+                where_clauses = []
+                if version_id is not None:
+                    where_clauses.append(f"version_id = {version_id}")
+                if year is not None:
+                    where_clauses.append(f"year = {year}")
+                if severity:
+                    where_clauses.append(f"severity_level = '{severity}'")
+                if county:
+                    where_clauses.append(f"county = '{county}'")
+                if injury_type:
+                    where_clauses.append(f"injury_type = '{injury_type}'")
+                if venue_rating:
+                    where_clauses.append(f"venue_rating = '{venue_rating}'")
+
+                where_sql = " AND " + " AND ".join(where_clauses) if where_clauses else ""
+
+                query = text(f"""
+                    SELECT
+                        factor_combination,
+                        severity_level,
+                        injury_type,
+                        body_part,
+                        venue_rating,
+                        county,
+                        state,
+                        impact_on_life,
+                        version_id,
+                        year,
+                        claim_count,
+                        avg_actual,
+                        avg_predicted,
+                        avg_deviation_pct,
+                        abs_avg_deviation_pct,
+                        min_deviation,
+                        max_deviation,
+                        risk_level,
+                        total_dollar_error,
+                        avg_dollar_error
+                    FROM mv_executive_summary
+                    WHERE 1=1 {where_sql}
+                    ORDER BY abs_avg_deviation_pct DESC
+                    LIMIT {limit}
+                """)
+
+                result = conn.execute(query)
+                rows = result.fetchall()
+                columns = result.keys()
+
+                return [dict(zip(columns, row)) for row in rows]
+
+        data = await loop.run_in_executor(None, get_summary)
+
+        return {
+            "status": "success",
+            "count": len(data),
+            "filters": {
+                "version_id": version_id,
+                "year": year,
+                "severity": severity,
+                "county": county,
+                "injury_type": injury_type,
+                "venue_rating": venue_rating
+            },
+            "data": data
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting executive summary: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/top-variance-factors")
+async def get_top_variance_factors(
+    dimension: Optional[str] = Query(None, description="Filter by dimension (Severity/Injury Type/Venue Rating/Impact on Life/County)")
+):
+    """
+    Get top 10 high-variance factors by each dimension
+    Dimensions: Severity, Injury Type, Venue Rating, Impact on Life, County
+    """
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        def get_top_factors():
+            from sqlalchemy import text, create_engine
+            from pathlib import Path
+
+            db_path = Path('app/db/claims_analytics.db')
+            engine = create_engine(f'sqlite:///{db_path}')
+
+            with engine.connect() as conn:
+                where_sql = f" WHERE dimension = '{dimension}'" if dimension else ""
+
+                query = text(f"""
+                    SELECT
+                        dimension,
+                        factor_value,
+                        total_claims,
+                        avg_deviation,
+                        total_error,
+                        risk_level,
+                        county,
+                        state
+                    FROM mv_top_variance_factors
+                    {where_sql}
+                    ORDER BY dimension, avg_deviation DESC
+                """)
+
+                result = conn.execute(query)
+                rows = result.fetchall()
+                columns = result.keys()
+
+                return [dict(zip(columns, row)) for row in rows]
+
+        data = await loop.run_in_executor(None, get_top_factors)
+
+        # Group by dimension
+        grouped = {}
+        for item in data:
+            dim = item['dimension']
+            if dim not in grouped:
+                grouped[dim] = []
+            grouped[dim].append(item)
+
+        return {
+            "status": "success",
+            "count": len(data),
+            "filter": {"dimension": dimension},
+            "data": data,
+            "grouped_by_dimension": grouped
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting top variance factors: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/county-comparison")
+async def get_county_comparison(
+    severity: Optional[str] = Query(None, description="Severity Level (Low/Medium/High)"),
+    injury: Optional[str] = Query(None, description="Injury Type"),
+    venue: Optional[str] = Query(None, description="Venue Rating"),
+    iol: Optional[int] = Query(None, description="Impact on Life (1-5)"),
+    version_id: Optional[int] = Query(None, description="Version ID"),
+    limit: int = Query(50, description="Max counties to return")
+):
+    """
+    Compare similar factors across counties
+    For a given factor combination (severity, injury, venue, IOL),
+    show which counties have the highest/lowest variance
+    """
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+
+        def get_comparison():
+            from sqlalchemy import text, create_engine
+            from pathlib import Path
+
+            db_path = Path('app/db/claims_analytics.db')
+            engine = create_engine(f'sqlite:///{db_path}')
+
+            with engine.connect() as conn:
+                # Build WHERE clause
+                where_clauses = []
+                if severity:
+                    where_clauses.append(f"severity_level = '{severity}'")
+                if injury:
+                    where_clauses.append(f"injury_type = '{injury}'")
+                if venue:
+                    where_clauses.append(f"venue_rating = '{venue}'")
+                if iol is not None:
+                    where_clauses.append(f"impact_on_life = {iol}")
+                if version_id is not None:
+                    where_clauses.append(f"version_id = {version_id}")
+
+                where_sql = " WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+                query = text(f"""
+                    SELECT
+                        severity_level,
+                        injury_type,
+                        venue_rating,
+                        impact_on_life,
+                        version_id,
+                        county,
+                        state,
+                        county_full,
+                        claim_count,
+                        deviation_pct,
+                        avg_actual,
+                        avg_predicted,
+                        avg_dollar_error,
+                        total_dollar_error,
+                        risk_level,
+                        rank_in_group,
+                        counties_with_same_factors
+                    FROM mv_county_comparison
+                    {where_sql}
+                    ORDER BY deviation_pct DESC
+                    LIMIT {limit}
+                """)
+
+                result = conn.execute(query)
+                rows = result.fetchall()
+                columns = result.keys()
+
+                return [dict(zip(columns, row)) for row in rows]
+
+        data = await loop.run_in_executor(None, get_comparison)
+
+        return {
+            "status": "success",
+            "count": len(data),
+            "filters": {
+                "severity": severity,
+                "injury": injury,
+                "venue": venue,
+                "impact_on_life": iol,
+                "version_id": version_id
+            },
+            "data": data,
+            "message": f"Showing top {len(data)} counties with matching factors" if data else "No matching factor combinations found"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting county comparison: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

@@ -288,6 +288,63 @@ class Weight(Base):
     )
 
 
+class VenueStatistics(Base):
+    """
+    Pre-computed venue rating statistics table
+    Stores aggregated settlement statistics by venue rating, severity, causation, and IOL
+    Used for fast venue rating shift recommendations
+    """
+    __tablename__ = 'venue_statistics'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Grouping dimensions
+    VENUERATING = Column(String(50), nullable=False, index=True)
+    VENUERATINGTEXT = Column(String(100))
+    RATINGWEIGHT = Column(Float)
+    SEVERITY_CATEGORY = Column(String(20), nullable=False, index=True)  # Low/Medium/High
+    CAUSATION_CATEGORY = Column(String(20), nullable=False, index=True)  # Low/Medium/High
+    IOL = Column(Integer, nullable=False, index=True)
+
+    # Actual settlement statistics
+    mean_actual = Column(Float)
+    median_actual = Column(Float)
+    stddev_actual = Column(Float)
+    min_actual = Column(Float)
+    max_actual = Column(Float)
+
+    # Predicted statistics
+    mean_predicted = Column(Float)
+    median_predicted = Column(Float)
+    mode_predicted = Column(Float)
+    stddev_predicted = Column(Float)
+
+    # Error metrics
+    mean_absolute_error = Column(Float, index=True)  # Primary metric for recommendations
+    median_absolute_error = Column(Float)
+    mean_error_pct = Column(Float)
+
+    # Statistical measures
+    coefficient_of_variation = Column(Float)  # stddev/mean - predictability measure
+
+    # Confidence metrics
+    sample_size = Column(Integer, nullable=False, index=True)
+    confidence_interval_lower = Column(Float)
+    confidence_interval_upper = Column(Float)
+
+    # Data quality
+    last_updated = Column(DateTime)
+    data_period_start = Column(String(50))
+    data_period_end = Column(String(50))
+
+    __table_args__ = (
+        # Composite index for fast lookups
+        Index('idx_venue_lookup', 'VENUERATING', 'SEVERITY_CATEGORY', 'CAUSATION_CATEGORY', 'IOL'),
+        Index('idx_error_ranking', 'mean_absolute_error', 'sample_size'),
+        Index('idx_venue_category', 'VENUERATING', 'SEVERITY_CATEGORY'),
+    )
+
+
 class AggregatedCache(Base):
     """
     Cache table for pre-computed aggregations

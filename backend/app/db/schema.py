@@ -25,7 +25,7 @@ class Claim(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     # Core identifiers - ACTUAL DATA FORMAT
-    CLAIMID = Column(Integer, unique=True, nullable=False, index=True)
+    CLAIMID = Column(Integer, nullable=False, index=True)  # Removed unique=True to allow duplicates
     EXPSR_NBR = Column(String(50))
 
     # Core fields
@@ -209,7 +209,7 @@ class SSNB(Base):
     __tablename__ = 'ssnb'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    CLAIMID = Column(Integer, unique=True, nullable=False, index=True)
+    CLAIMID = Column(Integer, nullable=False, index=True)  # Removed unique=True to allow duplicates
     VERSIONID = Column(Integer)
     EXPSR_NBR = Column(String(50))
 

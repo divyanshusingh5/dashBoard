@@ -40,7 +40,7 @@ class Claim(Base):
     DOLLARAMOUNTHIGH = Column(Float, index=True)  # Actual settlement amount
     GENERALS = Column(Float)
 
-    # Injury information
+    # Injury information - Legacy single-tier structure (kept for backward compatibility)
     ALL_BODYPARTS = Column(Text)
     ALL_INJURIES = Column(Text)
     ALL_INJURYGROUP_CODES = Column(Text)
@@ -51,6 +51,42 @@ class Claim(Base):
     INJURY_COUNT = Column(Integer)
     BODYPART_COUNT = Column(Integer)
     INJURYGROUP_COUNT = Column(Integer)
+
+    # NEW: Multi-tier injury system - By SEVERITY ranking
+    PRIMARY_INJURY_BY_SEVERITY = Column(String(200))
+    PRIMARY_BODYPART_BY_SEVERITY = Column(String(200))
+    PRIMARY_INJURYGROUP_CODE_BY_SEVERITY = Column(String(50), index=True)
+    PRIMARY_INJURY_SEVERITY_SCORE = Column(Float, index=True)
+    PRIMARY_INJURY_CAUSATION_SCORE_BY_SEVERITY = Column(Float)
+
+    SECONDARY_INJURY_BY_SEVERITY = Column(String(200))
+    SECONDARY_BODYPART_BY_SEVERITY = Column(String(200))
+    SECONDARY_INJURYGROUP_CODE_BY_SEVERITY = Column(String(50))
+    SECONDARY_INJURY_SEVERITY_SCORE = Column(Float)
+    SECONDARY_INJURY_CAUSATION_SCORE_BY_SEVERITY = Column(Float)
+
+    TERTIARY_INJURY_BY_SEVERITY = Column(String(200))
+    TERTIARY_BODYPART_BY_SEVERITY = Column(String(200))
+    TERTIARY_INJURY_SEVERITY_SCORE = Column(Float)
+    TERTIARY_INJURY_CAUSATION_SCORE_BY_SEVERITY = Column(Float)
+
+    # NEW: Multi-tier injury system - By CAUSATION ranking
+    PRIMARY_INJURY_BY_CAUSATION = Column(String(200))
+    PRIMARY_BODYPART_BY_CAUSATION = Column(String(200))
+    PRIMARY_INJURYGROUP_CODE_BY_CAUSATION = Column(String(50), index=True)
+    PRIMARY_INJURY_CAUSATION_SCORE = Column(Float, index=True)
+    PRIMARY_INJURY_SEVERITY_SCORE_BY_CAUSATION = Column(Float)
+
+    SECONDARY_INJURY_BY_CAUSATION = Column(String(200))
+    SECONDARY_BODYPART_BY_CAUSATION = Column(String(200))
+    SECONDARY_INJURYGROUP_CODE_BY_CAUSATION = Column(String(50))
+    SECONDARY_INJURY_CAUSATION_SCORE = Column(Float)
+    SECONDARY_INJURY_SEVERITY_SCORE_BY_CAUSATION = Column(Float)
+
+    TERTIARY_INJURY_BY_CAUSATION = Column(String(200))
+    TERTIARY_BODYPART_BY_CAUSATION = Column(String(200))
+    TERTIARY_INJURY_CAUSATION_SCORE = Column(Float)
+    TERTIARY_INJURY_SEVERITY_SCORE_BY_CAUSATION = Column(Float)
 
     # Person information
     HASATTORNEY = Column(String(10))
@@ -81,6 +117,13 @@ class Claim(Base):
     SEVERITY_SCORE = Column(Float, index=True)
     CAUTION_LEVEL = Column(String(50), index=True)
     variance_pct = Column(Float, index=True)  # Calculated: (DOLLARAMOUNTHIGH - CAUSATION_HIGH_RECOMMENDATION) / CAUSATION_HIGH_RECOMMENDATION * 100
+
+    # NEW: Composite calculated scores from model
+    CALCULATED_SEVERITY_SCORE = Column(Float, index=True)
+    CALCULATED_CAUSATION_SCORE = Column(Float, index=True)
+
+    # NEW: Row number field
+    RN = Column(Integer)
 
     # Extended clinical factors (40+ feature columns)
     # Note: In CSV these have single quotes, in DB we use without quotes for column names
@@ -145,6 +188,84 @@ class Claim(Base):
         # For isolated factor analysis with full controls
         Index('idx_county_venue_injury', 'COUNTYNAME', 'VENUERATING', 'PRIMARY_INJURYGROUP_CODE'),
         Index('idx_county_venue_injury_severity', 'COUNTYNAME', 'VENUERATING', 'PRIMARY_INJURYGROUP_CODE', 'CAUTION_LEVEL'),
+
+        # NEW: Indexes for multi-tier injury analysis by severity
+        Index('idx_primary_severity_by_severity', 'PRIMARY_INJURYGROUP_CODE_BY_SEVERITY', 'PRIMARY_INJURY_SEVERITY_SCORE'),
+        Index('idx_calculated_scores', 'CALCULATED_SEVERITY_SCORE', 'CALCULATED_CAUSATION_SCORE'),
+
+        # NEW: Indexes for multi-tier injury analysis by causation
+        Index('idx_primary_causation_by_causation', 'PRIMARY_INJURYGROUP_CODE_BY_CAUSATION', 'PRIMARY_INJURY_CAUSATION_SCORE'),
+
+        # NEW: Model performance analysis indexes
+        Index('idx_model_performance', 'PRIMARY_INJURYGROUP_CODE_BY_SEVERITY', 'variance_pct', 'CALCULATED_SEVERITY_SCORE'),
+    )
+
+
+class SSNB(Base):
+    """
+    SSNB table - Single injury, Soft tissue, Neck/Back claims
+    Used for weight recalibration with float-based clinical factor values
+    """
+    __tablename__ = 'ssnb'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    CLAIMID = Column(Integer, unique=True, nullable=False, index=True)
+    VERSIONID = Column(Integer)
+    EXPSR_NBR = Column(String(50))
+
+    # Financial
+    CAUSATION_HIGH_RECOMMENDATION = Column(Float)
+    DOLLARAMOUNTHIGH = Column(Float)
+
+    # Venue
+    VENUERATING = Column(String(50))
+    RATINGWEIGHT = Column(Float)
+    VENUERATINGTEXT = Column(String(100))
+    VENUERATINGPOINT = Column(Float)
+
+    # Dates
+    INCIDENTDATE = Column(String(50))
+    CLAIMCLOSEDDATE = Column(String(50))
+
+    # Demographics
+    AGE = Column(Integer)
+    GENDER = Column(Integer)
+    HASATTORNEY = Column(Integer)
+    IOL = Column(Integer)
+    ADJUSTERNAME = Column(String(100))
+    OCCUPATION = Column(String(200))
+
+    # Location
+    COUNTYNAME = Column(String(100))
+    VENUESTATE = Column(String(50))
+    VULNERABLECLAIMANT = Column(Boolean)
+
+    # Fixed injury type for SSNB
+    PRIMARY_INJURY = Column(String(200))  # Always 'Sprain/Strain'
+    PRIMARY_BODYPART = Column(String(200))  # Always 'Neck/Back'
+    PRIMARY_INJURY_GROUP = Column(String(200))  # Always 'Sprain/Strain, Neck/Back'
+
+    # Scores
+    PRIMARY_SEVERITY_SCORE = Column(Float)
+    PRIMARY_CAUSATION_SCORE = Column(Float)
+
+    # Clinical factors - FLOAT VALUES (not categorical!)
+    Causation_Compliance = Column(Float)
+    Clinical_Findings = Column(Float)
+    Consistent_Mechanism = Column(Float)
+    Injury_Location = Column(Float)
+    Movement_Restriction = Column(Float)
+    Pain_Management = Column(Float)
+    Prior_Treatment = Column(Float)
+    Symptom_Timeline = Column(Float)
+    Treatment_Course = Column(Float)
+    Treatment_Delays = Column(Float)
+    Treatment_Period_Considered = Column(Float)
+    Vehicle_Impact = Column(Float)
+
+    __table_args__ = (
+        Index('idx_ssnb_severity', 'PRIMARY_SEVERITY_SCORE'),
+        Index('idx_ssnb_causation', 'PRIMARY_CAUSATION_SCORE'),
     )
 
 

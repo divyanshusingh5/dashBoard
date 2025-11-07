@@ -43,10 +43,15 @@ class DataServiceSQLite:
             session = self.get_session()
 
             def query_db():
-                query = session.query(Claim)
-                if limit:
-                    query = query.limit(limit)
-                return [self._claim_to_dict(claim) for claim in query.all()]
+                try:
+                    query = session.query(Claim)
+                    if limit:
+                        query = query.limit(limit)
+                    return [self._claim_to_dict(claim) for claim in query.all()]
+                except Exception as e:
+                    logger.error(f"Database query failed: {str(e)}")
+                    # Fallback to CSV if database is not properly initialized
+                    return self._load_from_csv(limit)
 
             claims = await loop.run_in_executor(None, query_db)
             session.close()
@@ -507,6 +512,47 @@ class DataServiceSQLite:
             'CAUTION_LEVEL': claim.CAUTION_LEVEL,
             'variance_pct': claim.variance_pct,
 
+            # NEW: Composite calculated scores
+            'CALCULATED_SEVERITY_SCORE': claim.CALCULATED_SEVERITY_SCORE,
+            'CALCULATED_CAUSATION_SCORE': claim.CALCULATED_CAUSATION_SCORE,
+            'RN': claim.RN,
+
+            # NEW: Multi-tier injury system - By SEVERITY
+            'PRIMARY_INJURY_BY_SEVERITY': claim.PRIMARY_INJURY_BY_SEVERITY,
+            'PRIMARY_BODYPART_BY_SEVERITY': claim.PRIMARY_BODYPART_BY_SEVERITY,
+            'PRIMARY_INJURYGROUP_CODE_BY_SEVERITY': claim.PRIMARY_INJURYGROUP_CODE_BY_SEVERITY,
+            'PRIMARY_INJURY_SEVERITY_SCORE': claim.PRIMARY_INJURY_SEVERITY_SCORE,
+            'PRIMARY_INJURY_CAUSATION_SCORE_BY_SEVERITY': claim.PRIMARY_INJURY_CAUSATION_SCORE_BY_SEVERITY,
+
+            'SECONDARY_INJURY_BY_SEVERITY': claim.SECONDARY_INJURY_BY_SEVERITY,
+            'SECONDARY_BODYPART_BY_SEVERITY': claim.SECONDARY_BODYPART_BY_SEVERITY,
+            'SECONDARY_INJURYGROUP_CODE_BY_SEVERITY': claim.SECONDARY_INJURYGROUP_CODE_BY_SEVERITY,
+            'SECONDARY_INJURY_SEVERITY_SCORE': claim.SECONDARY_INJURY_SEVERITY_SCORE,
+            'SECONDARY_INJURY_CAUSATION_SCORE_BY_SEVERITY': claim.SECONDARY_INJURY_CAUSATION_SCORE_BY_SEVERITY,
+
+            'TERTIARY_INJURY_BY_SEVERITY': claim.TERTIARY_INJURY_BY_SEVERITY,
+            'TERTIARY_BODYPART_BY_SEVERITY': claim.TERTIARY_BODYPART_BY_SEVERITY,
+            'TERTIARY_INJURY_SEVERITY_SCORE': claim.TERTIARY_INJURY_SEVERITY_SCORE,
+            'TERTIARY_INJURY_CAUSATION_SCORE_BY_SEVERITY': claim.TERTIARY_INJURY_CAUSATION_SCORE_BY_SEVERITY,
+
+            # NEW: Multi-tier injury system - By CAUSATION
+            'PRIMARY_INJURY_BY_CAUSATION': claim.PRIMARY_INJURY_BY_CAUSATION,
+            'PRIMARY_BODYPART_BY_CAUSATION': claim.PRIMARY_BODYPART_BY_CAUSATION,
+            'PRIMARY_INJURYGROUP_CODE_BY_CAUSATION': claim.PRIMARY_INJURYGROUP_CODE_BY_CAUSATION,
+            'PRIMARY_INJURY_CAUSATION_SCORE': claim.PRIMARY_INJURY_CAUSATION_SCORE,
+            'PRIMARY_INJURY_SEVERITY_SCORE_BY_CAUSATION': claim.PRIMARY_INJURY_SEVERITY_SCORE_BY_CAUSATION,
+
+            'SECONDARY_INJURY_BY_CAUSATION': claim.SECONDARY_INJURY_BY_CAUSATION,
+            'SECONDARY_BODYPART_BY_CAUSATION': claim.SECONDARY_BODYPART_BY_CAUSATION,
+            'SECONDARY_INJURYGROUP_CODE_BY_CAUSATION': claim.SECONDARY_INJURYGROUP_CODE_BY_CAUSATION,
+            'SECONDARY_INJURY_CAUSATION_SCORE': claim.SECONDARY_INJURY_CAUSATION_SCORE,
+            'SECONDARY_INJURY_SEVERITY_SCORE_BY_CAUSATION': claim.SECONDARY_INJURY_SEVERITY_SCORE_BY_CAUSATION,
+
+            'TERTIARY_INJURY_BY_CAUSATION': claim.TERTIARY_INJURY_BY_CAUSATION,
+            'TERTIARY_BODYPART_BY_CAUSATION': claim.TERTIARY_BODYPART_BY_CAUSATION,
+            'TERTIARY_INJURY_CAUSATION_SCORE': claim.TERTIARY_INJURY_CAUSATION_SCORE,
+            'TERTIARY_INJURY_SEVERITY_SCORE_BY_CAUSATION': claim.TERTIARY_INJURY_SEVERITY_SCORE_BY_CAUSATION,
+
             # Clinical features (40+)
             'Advanced_Pain_Treatment': claim.Advanced_Pain_Treatment,
             'Causation_Compliance': claim.Causation_Compliance,
@@ -561,6 +607,30 @@ class DataServiceSQLite:
             'category': weight.category,
             'description': weight.description
         }
+
+    def _load_from_csv(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        Fallback method to load data from CSV when database is unavailable
+        """
+        try:
+            csv_path = Path(__file__).parent.parent.parent / 'data' / 'dat.csv'
+            logger.info(f"Loading data from CSV fallback: {csv_path}")
+
+            df = pd.read_csv(csv_path)
+
+            if limit:
+                df = df.head(limit)
+
+            # Replace NaN, inf, -inf with None for JSON serialization
+            df = df.replace([np.nan, np.inf, -np.inf], None)
+
+            # Convert DataFrame to list of dictionaries
+            claims = df.to_dict('records')
+            logger.info(f"Loaded {len(claims)} claims from CSV")
+            return claims
+        except Exception as e:
+            logger.error(f"Failed to load from CSV: {str(e)}")
+            return []
 
 
 # Singleton instance

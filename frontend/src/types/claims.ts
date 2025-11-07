@@ -58,6 +58,48 @@ export interface ClaimData {
   SEVERITY_SCORE?: number;
   CAUTION_LEVEL?: string;
   variance_pct?: number;
+
+  // NEW: Composite calculated scores from model
+  CALCULATED_SEVERITY_SCORE?: number;
+  CALCULATED_CAUSATION_SCORE?: number;
+  RN?: number;
+
+  // NEW: Multi-tier injury system - By SEVERITY ranking
+  PRIMARY_INJURY_BY_SEVERITY?: string;
+  PRIMARY_BODYPART_BY_SEVERITY?: string;
+  PRIMARY_INJURYGROUP_CODE_BY_SEVERITY?: string;
+  PRIMARY_INJURY_SEVERITY_SCORE?: number;
+  PRIMARY_INJURY_CAUSATION_SCORE_BY_SEVERITY?: number;
+
+  SECONDARY_INJURY_BY_SEVERITY?: string;
+  SECONDARY_BODYPART_BY_SEVERITY?: string;
+  SECONDARY_INJURYGROUP_CODE_BY_SEVERITY?: string;
+  SECONDARY_INJURY_SEVERITY_SCORE?: number;
+  SECONDARY_INJURY_CAUSATION_SCORE_BY_SEVERITY?: number;
+
+  TERTIARY_INJURY_BY_SEVERITY?: string;
+  TERTIARY_BODYPART_BY_SEVERITY?: string;
+  TERTIARY_INJURY_SEVERITY_SCORE?: number;
+  TERTIARY_INJURY_CAUSATION_SCORE_BY_SEVERITY?: number;
+
+  // NEW: Multi-tier injury system - By CAUSATION ranking
+  PRIMARY_INJURY_BY_CAUSATION?: string;
+  PRIMARY_BODYPART_BY_CAUSATION?: string;
+  PRIMARY_INJURYGROUP_CODE_BY_CAUSATION?: string;
+  PRIMARY_INJURY_CAUSATION_SCORE?: number;
+  PRIMARY_INJURY_SEVERITY_SCORE_BY_CAUSATION?: number;
+
+  SECONDARY_INJURY_BY_CAUSATION?: string;
+  SECONDARY_BODYPART_BY_CAUSATION?: string;
+  SECONDARY_INJURYGROUP_CODE_BY_CAUSATION?: string;
+  SECONDARY_INJURY_CAUSATION_SCORE?: number;
+  SECONDARY_INJURY_SEVERITY_SCORE_BY_CAUSATION?: number;
+
+  TERTIARY_INJURY_BY_CAUSATION?: string;
+  TERTIARY_BODYPART_BY_CAUSATION?: string;
+  TERTIARY_INJURY_CAUSATION_SCORE?: number;
+  TERTIARY_INJURY_SEVERITY_SCORE_BY_CAUSATION?: number;
+
   // Extended clinical factors
   Advanced_Pain_Treatment?: string;
   Causation_Compliance?: string;
@@ -163,4 +205,134 @@ export interface RecalibrationMetrics {
   mape_after: number;
   rmse_before: number;
   rmse_after: number;
+}
+
+// SSNB Data Interface - Float-based clinical factors for weight recalibration
+export interface SSNBData {
+  CLAIMID: number;
+  VERSIONID: number;
+  EXPSR_NBR: string;
+  DOLLARAMOUNTHIGH: number;
+  CAUSATION_HIGH_RECOMMENDATION: number;
+  PRIMARY_SEVERITY_SCORE: number;
+  PRIMARY_CAUSATION_SCORE: number;
+  PRIMARY_INJURY: string;
+  PRIMARY_BODYPART: string;
+  PRIMARY_INJURY_GROUP: string;
+
+  // Float clinical factors (NOT categorical strings like in Claims table)
+  Causation_Compliance: number | null;
+  Clinical_Findings: number | null;
+  Consistent_Mechanism: number | null;
+  Injury_Location: number | null;
+  Movement_Restriction: number | null;
+  Pain_Management: number | null;
+  Prior_Treatment: number | null;
+  Symptom_Timeline: number | null;
+  Treatment_Course: number | null;
+  Treatment_Delays: number | null;
+  Treatment_Period_Considered: number | null;
+  Vehicle_Impact: number | null;
+
+  // Venue and demographics
+  VENUERATING: string;
+  RATINGWEIGHT: number | null;
+  VENUERATINGTEXT: string | null;
+  VENUERATINGPOINT: number | null;
+  AGE: number;
+  GENDER: number;
+  HASATTORNEY: number;
+  IOL: number;
+  ADJUSTERNAME: string;
+  COUNTYNAME: string | null;
+  VENUESTATE: string;
+}
+
+// Prediction Variance Analysis
+export interface PredictionVarianceData {
+  CLAIMID: number;
+  DOLLARAMOUNTHIGH: number;
+  CAUSATION_HIGH_RECOMMENDATION: number;
+  variance_pct: number;
+  prediction_direction: 'Over' | 'Under';
+
+  // Multi-tier injury data
+  PRIMARY_INJURY_BY_SEVERITY: string;
+  PRIMARY_BODYPART_BY_SEVERITY: string;
+  PRIMARY_INJURY_SEVERITY_SCORE: number;
+  PRIMARY_INJURY_BY_CAUSATION: string;
+  PRIMARY_BODYPART_BY_CAUSATION: string;
+  PRIMARY_INJURY_CAUSATION_SCORE: number;
+
+  // Composite scores
+  CALCULATED_SEVERITY_SCORE: number;
+  CALCULATED_CAUSATION_SCORE: number;
+
+  // Key clinical factors
+  Causation_Compliance: string | null;
+  Clinical_Findings: string | null;
+  Treatment_Course: string | null;
+  Symptom_Timeline: string | null;
+  Pain_Management: string | null;
+  Movement_Restriction: string | null;
+
+  // Venue and demographics
+  VENUERATING: string;
+  IOL: number;
+  AGE: number;
+  HASATTORNEY: string | number;
+  ADJUSTERNAME: string;
+  COUNTYNAME: string;
+  VENUESTATE: string;
+}
+
+export interface PredictionVarianceSummary {
+  total_bad_predictions: number;
+  over_predictions: number;
+  under_predictions: number;
+  avg_variance_pct?: number;
+  max_variance_pct?: number;
+  min_variance_pct?: number;
+}
+
+export interface PredictionVarianceResponse {
+  bad_predictions: PredictionVarianceData[];
+  summary: PredictionVarianceSummary;
+  filters: {
+    variance_threshold: number;
+    limit: number;
+  };
+}
+
+// Factor Combination Analysis
+export interface FactorCombination {
+  combination_key: string;
+  factors: {
+    injury_severity: string;
+    injury_causation: string;
+    venue: string;
+    attorney: string;
+    ioi: number;
+    causation_compliance: string;
+    clinical_findings: string;
+  };
+  count: number;
+  avg_variance_pct: number;
+  max_variance_pct: number;
+  sample_claims: Array<{
+    CLAIMID: number;
+    variance_pct: number;
+    actual: number;
+    predicted: number;
+  }>;
+}
+
+export interface FactorCombinationResponse {
+  problematic_combinations: FactorCombination[];
+  total_combinations: number;
+  filters: {
+    variance_threshold: number;
+    min_occurrences: number;
+  };
+  recommendations: string[];
 }

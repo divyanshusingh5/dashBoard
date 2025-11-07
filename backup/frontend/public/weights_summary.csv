@@ -1,0 +1,39 @@
+factor_name,base_weight,min_weight,max_weight,std_weight,median_weight,category,description,usage_count,usage_pct
+Advanced_Pain_Treatment,2.495,0.0023,4.9958,1.4355,2.4468,Treatment,Weight contribution for advanced pain treatment,1000,100.0
+Causation_Compliance,2.4797,0.0068,4.9965,1.4592,2.3644,Causation,Weight contribution for causation compliance,1000,100.0
+Clinical_Findings,2.5557,0.0082,4.9992,1.4294,2.63,Other,Weight contribution for clinical findings,1000,100.0
+Cognitive_Symptoms,2.6569,0.15,4.9654,1.5455,2.4075,Clinical,Weight contribution for cognitive symptoms,41,4.1
+Complete_Disability_Duration,2.725,0.4638,4.8168,1.4856,2.0047,Disability,Weight contribution for complete disability duration,31,3.1
+Concussion_Diagnosis,2.8668,1.5661,4.9072,1.1898,2.7515,Other,Weight contribution for concussion diagnosis,6,0.6
+Consciousness_Impact,2.7049,0.0864,4.7718,1.339,3.315,Other,Weight contribution for consciousness impact,23,2.3
+Consistent_Mechanism,2.4378,0.0003,4.9868,1.4043,2.3472,Other,Weight contribution for consistent mechanism,1000,100.0
+Dental_Procedure,2.205,0.3385,4.8524,1.4842,2.2742,Other,Weight contribution for dental procedure,13,1.3
+Emergency_Treatment,2.3078,0.1048,4.9283,1.4657,2.2694,Treatment,Weight contribution for emergency treatment,50,5.0
+Fixation_Method,1.8051,0.1211,4.7704,1.2749,1.4888,Other,Weight contribution for fixation method,18,1.8
+Head_Trauma,2.3451,0.0189,4.7779,1.4798,2.496,Injury,Weight contribution for head trauma,93,9.3
+Immobilization_Used,2.5009,0.0294,4.9832,1.508,2.6793,Other,Weight contribution for immobilization used,219,21.9
+Injury_Count,2.5245,0.0001,4.9902,1.4716,2.558,Injury,Weight contribution for injury count,1000,100.0
+Injury_Extent,2.5102,0.0012,4.9909,1.4397,2.4823,Injury,Weight contribution for injury extent,1000,100.0
+Injury_Laterality,2.4537,0.0003,4.9994,1.4365,2.4575,Injury,Weight contribution for injury laterality,1000,100.0
+Injury_Location,2.47,0.0106,4.9977,1.4205,2.4674,Injury,Weight contribution for injury location,1000,100.0
+Injury_Type,2.5143,0.0146,4.995,1.4347,2.4764,Injury,Weight contribution for injury type,1000,100.0
+Mobility_Assistance,2.2366,1.0246,4.2457,1.395,1.838,Other,Weight contribution for mobility assistance,4,0.4
+Movement_Restriction,2.4362,0.0005,4.9955,1.4532,2.4489,Other,Weight contribution for movement restriction,1000,100.0
+Nerve_Involvement,2.5031,0.0003,4.9944,1.4396,2.5008,Other,Weight contribution for nerve involvement,1000,100.0
+Pain_Management,2.5186,0.0035,4.9944,1.4428,2.5552,Clinical,Weight contribution for pain management,1000,100.0
+Partial_Disability_Duration,3.2822,0.3324,4.9944,1.4481,3.6058,Disability,Weight contribution for partial disability duration,17,1.7
+Physical_Symptoms,2.5005,0.0016,4.9957,1.4532,2.5114,Clinical,Weight contribution for physical symptoms,1000,100.0
+Physical_Therapy,2.433,0.0004,4.9987,1.4514,2.3717,Treatment,Weight contribution for physical therapy,1000,100.0
+Prior_Treatment,2.5596,0.0005,4.9985,1.4685,2.6204,Treatment,Weight contribution for prior treatment,1000,100.0
+Recovery_Duration,2.5368,0.0199,4.9953,1.441,2.5721,Disability,Weight contribution for recovery duration,1000,100.0
+Repair_Type,2.0254,0.027,4.8163,1.3742,1.9146,Other,Weight contribution for repair type,11,1.1
+Respiratory_Issues,2.9337,1.6152,4.1761,0.9473,2.6895,Other,Weight contribution for respiratory issues,12,1.2
+Soft_Tissue_Damage,2.5909,0.0211,4.7509,1.5747,2.6389,Other,Weight contribution for soft tissue damage,43,4.3
+Special_Treatment,1.2512,0.075,3.31,1.3105,0.9681,Treatment,Weight contribution for special treatment,5,0.5
+Surgical_Intervention,2.8491,0.0541,4.9455,1.3228,2.9038,Other,Weight contribution for surgical intervention,35,3.5
+Symptom_Timeline,2.4102,0.0017,4.999,1.4742,2.3239,Clinical,Weight contribution for symptom timeline,1000,100.0
+Treatment_Course,2.5409,0.0006,4.9987,1.4584,2.5777,Treatment,Weight contribution for treatment course,1000,100.0
+Treatment_Delays,2.4899,0.0025,4.9995,1.4466,2.5537,Treatment,Weight contribution for treatment delays,1000,100.0
+Treatment_Level,2.4747,0.012,4.9965,1.4171,2.4864,Treatment,Weight contribution for treatment level,1000,100.0
+Treatment_Period_Considered,2.4681,0.0045,4.9922,1.4512,2.4507,Treatment,Weight contribution for treatment period considered,1000,100.0
+Vehicle_Impact,2.4844,0.0014,4.9997,1.4678,2.4664,Other,Weight contribution for vehicle impact,1000,100.0

@@ -35,7 +35,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
         cutoff_date = (datetime.now() - timedelta(days=months * 30)).strftime('%Y-%m-%d')
 
         # Step 1: Get total recent claims count (database query)
-        total_recent = session.query(func.count(Claim.id)).filter(
+        total_recent = session.query(func.count(Claim.CLAIMID)).filter(
             Claim.CLAIMCLOSEDDATE >= cutoff_date
         ).scalar()
 
@@ -50,31 +50,31 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
         # Step 2: Get control variables (database-level mode calculation)
         control_injury_query = session.query(
             Claim.PRIMARY_INJURYGROUP_CODE,
-            func.count(Claim.id).label('count')
+            func.count(Claim.CLAIMID).label('count')
         ).filter(
             Claim.CLAIMCLOSEDDATE >= cutoff_date,
             Claim.PRIMARY_INJURYGROUP_CODE.isnot(None)
-        ).group_by(Claim.PRIMARY_INJURYGROUP_CODE).order_by(func.count(Claim.id).desc()).first()
+        ).group_by(Claim.PRIMARY_INJURYGROUP_CODE).order_by(func.count(Claim.CLAIMID).desc()).first()
 
         control_injury = control_injury_query[0] if control_injury_query else None
 
         control_severity_query = session.query(
             Claim.CAUTION_LEVEL,
-            func.count(Claim.id).label('count')
+            func.count(Claim.CLAIMID).label('count')
         ).filter(
             Claim.CLAIMCLOSEDDATE >= cutoff_date,
             Claim.CAUTION_LEVEL.isnot(None)
-        ).group_by(Claim.CAUTION_LEVEL).order_by(func.count(Claim.id).desc()).first()
+        ).group_by(Claim.CAUTION_LEVEL).order_by(func.count(Claim.CLAIMID).desc()).first()
 
         control_severity = control_severity_query[0] if control_severity_query else None
 
         control_impact_query = session.query(
             Claim.IOL,
-            func.count(Claim.id).label('count')
+            func.count(Claim.CLAIMID).label('count')
         ).filter(
             Claim.CLAIMCLOSEDDATE >= cutoff_date,
             Claim.IOL.isnot(None)
-        ).group_by(Claim.IOL).order_by(func.count(Claim.id).desc()).first()
+        ).group_by(Claim.IOL).order_by(func.count(Claim.CLAIMID).desc()).first()
 
         control_impact = control_impact_query[0] if control_impact_query else None
 
@@ -101,12 +101,12 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             # Get current venue rating (mode - database-level)
             current_venue_query = session.query(
                 Claim.VENUERATING,
-                func.count(Claim.id).label('count')
+                func.count(Claim.CLAIMID).label('count')
             ).filter(
                 Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,
                 Claim.VENUERATING.isnot(None)
-            ).group_by(Claim.VENUERATING).order_by(func.count(Claim.id).desc()).first()
+            ).group_by(Claim.VENUERATING).order_by(func.count(Claim.CLAIMID).desc()).first()
 
             if not current_venue_query or not current_venue_query[0]:
                 continue
@@ -116,7 +116,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             # ISOLATED ANALYSIS: Database aggregation with full controls
             isolated_current = session.query(
                 func.avg(func.abs(Claim.variance_pct)).label('avg_variance'),
-                func.count(Claim.id).label('count')
+                func.count(Claim.CLAIMID).label('count')
             ).filter(
                 Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,
@@ -132,7 +132,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             if not isolated_current or isolated_current[1] < 5:
                 isolated_current = session.query(
                     func.avg(func.abs(Claim.variance_pct)),
-                    func.count(Claim.id)
+                    func.count(Claim.CLAIMID)
                 ).filter(
                     Claim.CLAIMCLOSEDDATE >= cutoff_date,
                     Claim.COUNTYNAME == county_name,
@@ -144,7 +144,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             if not isolated_current or isolated_current[1] < 3:
                 isolated_current = session.query(
                     func.avg(func.abs(Claim.variance_pct)),
-                    func.count(Claim.id)
+                    func.count(Claim.CLAIMID)
                 ).filter(
                     Claim.CLAIMCLOSEDDATE >= cutoff_date,
                     Claim.COUNTYNAME == county_name,
@@ -169,7 +169,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                 # Get alternative venue performance with controls
                 isolated_alt = session.query(
                     func.avg(func.abs(Claim.variance_pct)),
-                    func.count(Claim.id)
+                    func.count(Claim.CLAIMID)
                 ).filter(
                     Claim.CLAIMCLOSEDDATE >= cutoff_date,
                     Claim.VENUERATING == alt_venue,
@@ -181,7 +181,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
                 if not isolated_alt or isolated_alt[1] < 5:
                     isolated_alt = session.query(
                         func.avg(func.abs(Claim.variance_pct)),
-                        func.count(Claim.id)
+                        func.count(Claim.CLAIMID)
                     ).filter(
                         Claim.CLAIMCLOSEDDATE >= cutoff_date,
                         Claim.VENUERATING == alt_venue,
@@ -220,7 +220,7 @@ async def get_venue_shift_recommendations_optimized(data_service, months: int = 
             monthly_data = session.query(
                 func.strftime('%Y-%m', Claim.CLAIMCLOSEDDATE).label('month'),
                 func.avg(Claim.variance_pct).label('avg_var'),
-                func.count(Claim.id).label('count')
+                func.count(Claim.CLAIMID).label('count')
             ).filter(
                 Claim.CLAIMCLOSEDDATE >= cutoff_date,
                 Claim.COUNTYNAME == county_name,

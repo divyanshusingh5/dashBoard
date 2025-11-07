@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Dashboard API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+
+            try {
+                // Test 1: Health check
+                const healthResponse = await fetch('http://localhost:8000/health');
+                const healthData = await healthResponse.json();
+                console.log('Health:', healthData);
+
+                // Test 2: Aggregation
+                const aggResponse = await fetch('http://localhost:8000/api/v1/aggregation/aggregated');
+                const aggData = await aggResponse.json();
+                console.log('Aggregation data:', aggData);
+
+                resultDiv.innerHTML = `
+                    <h2>✅ Success!</h2>
+                    <p><strong>Health:</strong> ${healthData.status}</p>
+                    <p><strong>Year Severity Data:</strong> ${aggData.yearSeverity?.length} records</p>
+                    <p><strong>County Year Data:</strong> ${aggData.countyYear?.length} records</p>
+                    <p><strong>Injury Group Data:</strong> ${aggData.injuryGroup?.length} records</p>
+                    <p><strong>Adjuster Performance:</strong> ${aggData.adjusterPerformance?.length} records</p>
+                    <p><strong>Venue Analysis:</strong> ${aggData.venueAnalysis?.length} records</p>
+                    <p><strong>Variance Drivers:</strong> ${aggData.varianceDrivers?.length} records</p>
+                    <p style="color: green;">API is working correctly! The dashboard should load.</p>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <h2>❌ Error</h2>
+                    <p style="color: red;">${error.message}</p>
+                    <p>Check browser console for details</p>
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = () => {
+            testAPI();
+        };
+    </script>
+</body>
+</html>

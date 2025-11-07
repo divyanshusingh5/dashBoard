@@ -28,7 +28,7 @@ data['DOLLARAMOUNTHIGH'] = np.round(np.random.uniform(1, 16001150, n), 2)
 
 # Venue information
 venue_ratings = ['Conservative', 'Liberal', 'Moderate', 'Very Liberal']
-data['VENUERATING'] = np.random.choice(venue_ratings, n, p=[0.22, 0.24, 0.534, 0.006])
+data['VENUERATING'] = np.random.choice(venue_ratings, n, p=[0.22, 0.24, 0.54, 0.006])
 
 # Rating weight with 22 nulls (approximately)
 rating_weights = [80.0, 81.0, 83.0, 85.0, 95.0, 100.0, 115.0, 131.0, 132.0, 133.0, 134.0, 

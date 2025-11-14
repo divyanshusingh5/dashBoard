@@ -262,7 +262,7 @@ class DataServiceSQLite:
             session = self.get_session()
 
             def query_db():
-                # Query pre-computed materialized views
+                # Query pre-computed PostgreSQL materialized views
                 year_severity = session.execute(
                     text("SELECT * FROM mv_year_severity ORDER BY year DESC, severity_category")
                 ).fetchall()
@@ -275,20 +275,18 @@ class DataServiceSQLite:
                     text("SELECT * FROM mv_injury_group ORDER BY claim_count DESC")
                 ).fetchall()
 
+                # Note: mv_adjuster_performance uses 'total_claims' not 'claim_count'
                 adjuster_perf = session.execute(
-                    text("SELECT * FROM mv_adjuster_performance ORDER BY claim_count DESC")
+                    text("SELECT * FROM mv_adjuster_performance ORDER BY total_claims DESC")
                 ).fetchall()
 
                 venue_analysis = session.execute(
                     text("SELECT * FROM mv_venue_analysis ORDER BY claim_count DESC")
                 ).fetchall()
 
-                # Convert to dictionaries (exclude id and created_at columns)
+                # Convert to dictionaries (PostgreSQL views don't have id/created_at)
                 def row_to_dict(row):
-                    d = dict(row._mapping)
-                    d.pop('id', None)
-                    d.pop('created_at', None)
-                    return d
+                    return dict(row._mapping)
 
                 return {
                     'yearSeverity': [row_to_dict(row) for row in year_severity],
@@ -320,9 +318,10 @@ class DataServiceSQLite:
             session = self.get_session()
 
             def query_db():
-                # Try to get from materialized view first
+                # Get aggregated KPIs from PostgreSQL materialized view
+                # Note: PostgreSQL view has year/month columns, get most recent or aggregate all
                 result = session.execute(
-                    text("SELECT * FROM mv_kpi_summary ORDER BY created_at DESC LIMIT 1")
+                    text("SELECT * FROM mv_kpi_summary ORDER BY year DESC, month DESC LIMIT 1")
                 ).fetchone()
 
                 if result:
@@ -330,10 +329,10 @@ class DataServiceSQLite:
                     return {
                         "totalClaims": int(d.get('total_claims', 0)),
                         "avgSettlement": round(float(d.get('avg_settlement', 0)), 2),
-                        "avgDays": round(float(d.get('avg_days', 0)), 2),
-                        "highVariancePct": round(float(d.get('high_variance_pct', 0)), 2),
-                        "overpredictionRate": round(float(d.get('overprediction_rate', 0)), 2),
-                        "underpredictionRate": round(float(d.get('underprediction_rate', 0)), 2)
+                        "avgDays": round(float(d.get('avg_settlement_days', 0)), 2),
+                        "highVariancePct": round(float(d.get('avg_variance_pct', 0)), 2),
+                        "accuracyRate": round(float(d.get('accuracy_rate', 0)), 2),
+                        "medianSettlement": round(float(d.get('median_settlement', 0)), 2)
                     }
                 else:
                     # Fallback to computing directly

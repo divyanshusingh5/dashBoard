@@ -6,34 +6,45 @@ Provides 60x speed improvement over real-time aggregation
 from sqlalchemy import create_engine, text
 import logging
 import os
+import sys
+from dotenv import load_dotenv
+
+# Fix Windows console encoding for Unicode characters
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+# Load environment variables
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def test_postgresql_connection():
-    """Test different PostgreSQL connection combinations"""
+    """Test PostgreSQL connection from environment"""
 
-    credentials = [
-        "postgresql://postgres:user@localhost:5432/claims_analytics",
-    ]
+    # Get DATABASE_URL from environment
+    db_url = os.getenv('DATABASE_URL')
 
-    for i, db_url in enumerate(credentials, 1):
-        try:
-            logger.info(f"Trying connection {i}: {db_url.split('@')[0]}@...")
-            engine = create_engine(db_url, pool_pre_ping=True)
+    if not db_url:
+        logger.error("DATABASE_URL not found in environment variables")
+        logger.error("Please set DATABASE_URL in .env file")
+        return None
 
-            with engine.connect() as conn:
-                result = conn.execute(text("SELECT version()"))
-                version = result.fetchone()[0]
-                logger.info(f"✅ SUCCESS! Connected with: {db_url}")
-                return db_url
+    try:
+        logger.info(f"Testing connection to: {db_url.split('@')[1] if '@' in db_url else 'database'}...")
+        engine = create_engine(db_url, pool_pre_ping=True)
 
-        except Exception as e:
-            logger.warning(f"❌ Failed: {str(e)[:100]}...")
-            continue
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT version()"))
+            version = result.fetchone()[0]
+            logger.info(f"✅ SUCCESS! Connected to PostgreSQL")
+            return db_url
 
-    logger.error("❌ All connection attempts failed!")
-    return None
+    except Exception as e:
+        logger.error(f"❌ Connection failed: {str(e)[:100]}")
+        return None
 
 def create_materialized_views():
     """Create all materialized views for fast dashboard queries - PostgreSQL"""
@@ -72,15 +83,16 @@ def create_materialized_views():
                 ORDER BY column_name
             """)).fetchall()
 
-            available_columns = [row[0].lower() for row in columns_result]
+            # Keep original column names (they are uppercase in PostgreSQL)
+            available_columns = {row[0].lower(): row[0] for row in columns_result}
             logger.info(f"Found {len(available_columns)} columns in claims table")
 
             # Function to find column with fallback
             def find_column(search_terms, fallback):
-                """Find column by searching multiple terms, return fallback if not found"""
+                """Find column by searching multiple terms, return actual column name if found"""
                 for term in search_terms:
                     if term.lower() in available_columns:
-                        return term
+                        return available_columns[term.lower()]
                 return fallback
 
             # Map columns with proper fallbacks

@@ -103,8 +103,10 @@ export function useAggregatedClaimsDataAPI() {
     async function loadData() {
       try {
         console.log('Loading aggregated data from API...');
+        console.log('API URL:', `${API_BASE_URL}/aggregation/aggregated?use_fast=true`);
 
         const response = await axios.get(`${API_BASE_URL}/aggregation/aggregated`, {
+          params: { use_fast: true }, // Use PostgreSQL materialized views for fast aggregation
           timeout: 60000 // 60 second timeout for aggregation
         });
         const apiData = response.data;

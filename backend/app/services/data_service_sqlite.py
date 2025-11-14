@@ -1,7 +1,8 @@
 """
-Data Service - SQLite Version
-High-performance data access for 2M+ rows
-Uses SQLite with indexes and optimized queries
+Data Service - PostgreSQL Version
+High-performance data access for 100K+ rows
+Uses PostgreSQL with materialized views and optimized queries
+Supports both fast materialized views and real-time aggregation fallback
 """
 
 import pandas as pd
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class DataServiceSQLite:
-    """Service for handling claims data operations using SQLite"""
+    """Service for handling claims data operations using PostgreSQL with materialized views"""
 
     def __init__(self):
         self.engine = get_engine()
@@ -35,8 +36,8 @@ class DataServiceSQLite:
 
     async def get_full_claims_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Load full claims dataset from SQLite
-        For 2M+ rows, use pagination or filters
+        Load full claims dataset from PostgreSQL
+        For 100K+ rows, use pagination or filters
         """
         try:
             loop = asyncio.get_event_loop()

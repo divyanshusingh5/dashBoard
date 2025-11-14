@@ -1,6 +1,7 @@
 """
 Aggregation API - Optimized for real-time dashboard data
-Computes all aggregations from SQLite database
+Computes all aggregations from PostgreSQL database using materialized views
+Supports fast mode (materialized views) and fallback mode (real-time aggregation)
 """
 
 from fastapi import APIRouter, HTTPException, Query

@@ -1,8 +1,8 @@
 /**
  * Main Dashboard Page - API-Powered Real-Time Aggregation
- * Data flow: SQLite Database → FastAPI Backend → React Frontend
+ * Data flow: PostgreSQL Database → Materialized Views → FastAPI Backend → React Frontend
  * No CSV files needed - all data fetched via REST API endpoints
- * Supports 1M+ records with efficient server-side aggregation
+ * Supports 1M+ records with efficient server-side aggregation using PostgreSQL materialized views
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -171,7 +171,7 @@ const IndexAggregated = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading aggregated claims data from API...</p>
           <p className="text-xs text-muted-foreground mt-2">
-            (Real-time aggregation from SQLite database)
+            (Fast aggregation from PostgreSQL materialized views)
           </p>
         </div>
       </div>
@@ -190,8 +190,8 @@ const IndexAggregated = () => {
             <ol className="list-decimal list-inside space-y-1">
               <li>Make sure the backend API is running at <code className="bg-background px-2 py-1 rounded">http://localhost:8000</code></li>
               <li>Check the backend terminal for errors</li>
-              <li>Verify the database exists at <code className="bg-background px-2 py-1 rounded">backend/app/db/claims_analytics.db</code></li>
-              <li>If needed, run migration: <code className="bg-background px-2 py-1 rounded">python migrate_csv_to_sqlite.py</code></li>
+              <li>Verify PostgreSQL is running and database <code className="bg-background px-2 py-1 rounded">claims_analytics</code> exists</li>
+              <li>Check materialized views exist: <code className="bg-background px-2 py-1 rounded">python create_materialized_views_postgres.py</code></li>
             </ol>
           </div>
         </div>

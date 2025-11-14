@@ -92,7 +92,7 @@ export function FilterSidebar({ filters, counties, years, injuryGroups, venueRat
             {/* Version Filter - NEW */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                <span>Data Version</span>
+                <span>KB Version</span>
                 <Badge variant="secondary" className="text-xs">NEW</Badge>
               </label>
               <Select value={filters.version || 'all'} onValueChange={(v) => onFilterChange('version', v)}>

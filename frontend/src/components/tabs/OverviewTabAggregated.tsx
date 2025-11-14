@@ -126,7 +126,8 @@ export function OverviewTabAggregated({ data, kpis: initialKpis, filterOptions, 
           params.append('venue_rating', filters.venueRating);
         }
 
-        const url = `http://localhost:8000/api/v1/aggregation/executive-summary?${params.toString()}`;
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const url = `${API_BASE_URL}/api/v1/aggregation/executive-summary?${params.toString()}`;
         const response = await fetch(url);
         const result = await response.json();
 

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     ]
     DEBUG: bool = True
 
+    # Database Configuration
+    DATABASE_URL: str = "postgresql://postgres:user@localhost:5432/claims_analytics"
+
     # Data paths
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
     # Use backend/data as the canonical source for CSV files

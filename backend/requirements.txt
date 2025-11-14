@@ -11,3 +11,7 @@ openpyxl
 sqlalchemy>=2.0.0
 scipy
 tqdm
+# PostgreSQL driver - choose ONE of the following:
+# Option 1 (recommended for Windows): psycopg[binary]>=3.1.0
+# Option 2 (if psycopg fails): psycopg2-binary>=2.9.0
+psycopg2-binary>=2.9.0

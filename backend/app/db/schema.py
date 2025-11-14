@@ -1,6 +1,6 @@
 """
-SQLite Database Schema for Claims Analytics
-Optimized for 2M+ rows with proper indexing
+PostgreSQL Database Schema for Claims Analytics
+Optimized for 5M+ rows with proper indexing
 """
 
 from sqlalchemy import (
@@ -365,10 +365,10 @@ class AggregatedCache(Base):
 
 
 # Database connection setup
-def get_database_url(db_name: str = "claims_analytics.db") -> str:
-    """Get SQLite database URL"""
-    db_path = Path(__file__).parent / db_name
-    return f"sqlite:///{db_path}"
+def get_database_url() -> str:
+    """Get database URL from environment or config"""
+    from app.core.config import settings
+    return settings.DATABASE_URL
 
 
 def init_database(db_url: str = None):
@@ -381,8 +381,7 @@ def init_database(db_url: str = None):
     engine = create_engine(
         db_url,
         echo=False,
-        pool_pre_ping=True,
-        connect_args={"check_same_thread": False}  # For SQLite with FastAPI
+        pool_pre_ping=True
     )
 
     # Create all tables
@@ -402,16 +401,15 @@ def get_session(engine):
 def get_engine():
     """
     Get database engine with connection pooling for 5M+ claims
-    Optimized for production workload
+    Optimized for production workload with PostgreSQL
     """
     db_url = get_database_url()
     return create_engine(
         db_url,
         echo=False,
-        pool_size=20,              # Max persistent connections
-        max_overflow=40,           # Max burst connections (total: 60)
+        pool_size=10,              # PostgreSQL - lower pool size
+        max_overflow=20,           # Max burst connections (total: 30)
         pool_timeout=30,           # Wait 30s for available connection
         pool_recycle=3600,         # Recycle connections after 1 hour
-        pool_pre_ping=True,        # Check connection health before use
-        connect_args={"check_same_thread": False}  # For SQLite with FastAPI
+        pool_pre_ping=True         # Check connection health before use
     )

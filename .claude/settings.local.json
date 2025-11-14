@@ -3,7 +3,8 @@
     "allow": [
       "Bash(./venv/Scripts/python.exe:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Read(//d/tmp/**)"
     ],
     "deny": [],
     "ask": []
